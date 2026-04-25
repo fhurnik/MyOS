@@ -1,3 +1,4 @@
+using MyOS.API.Middlewares;
 using MyOS.Core.Infrastructure.Extensions;
 using MyOS.Core.Infrastructure.Logging;
 using Serilog;
@@ -30,6 +31,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
