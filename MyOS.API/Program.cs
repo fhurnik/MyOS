@@ -1,8 +1,14 @@
 using MyOS.Core.Infrastructure.Extensions;
+using MyOS.Core.Infrastructure.Logging;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Host.UseSerilog((_, loggerConfiguration) =>
+{
+    loggerConfiguration.ConfigureSerilog();
+});
+
 builder.Services.AddCore(builder.Configuration);
 
 builder.Services.AddControllers();
@@ -24,4 +30,22 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+try
+{
+    logger.LogInformation(
+    "MyOS API starting in {Environment} environment at {TimeUtc} UTC",
+    app.Environment.EnvironmentName,
+    DateTime.UtcNow);
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "MyOS API failed to start");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
