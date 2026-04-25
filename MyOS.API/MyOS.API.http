@@ -1,0 +1,6 @@
+@MyOS.API_HostAddress = http://localhost:5042
+
+GET {{MyOS.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
