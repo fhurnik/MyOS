@@ -18,6 +18,13 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+logger.LogInformation(
+"MyOS API starting in {Environment} environment at {TimeUtc} UTC",
+app.Environment.EnvironmentName,
+DateTime.UtcNow);
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -30,15 +37,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
-
 try
-{
-    logger.LogInformation(
-    "MyOS API starting in {Environment} environment at {TimeUtc} UTC",
-    app.Environment.EnvironmentName,
-    DateTime.UtcNow);
-
+{ 
     app.Run();
 }
 catch (Exception ex)
