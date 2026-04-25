@@ -9,6 +9,9 @@
     <Project Path="MyOS.Identity.Domain/MyOS.Identity.Domain.csproj" />
     <Project Path="MyOS.Identity.Infrastructure/MyOS.Identity.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+  </Folder>
   <Project Path="MyOS.API/MyOS.API.csproj" />
   <Project Path="MyOS.Migrator/MyOS.Migrator.csproj" />
 </Solution>
