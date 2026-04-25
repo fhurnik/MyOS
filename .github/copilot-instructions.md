@@ -8,6 +8,11 @@ The system is designed as a production-grade backend that manages personal life 
 
 The architecture follows pragmatic Domain-Driven Design (DDD), CQRS, and clean separation of responsibilities between modules.
 
+The system uses:
+
+* Serilog for structured logging
+* OpenTelemetry for observability
+
 Copilot must generate code that is:
 
 * production-quality
@@ -142,6 +147,46 @@ Domain must NOT:
 * contain Controllers
 * contain logging
 * contain database code
+
+---
+
+## Module Domain Rules
+
+Each module must have its own Domain project.
+
+Examples:
+
+MyOS.Modules.Identity.Domain  
+MyOS.Modules.Notes.Domain  
+MyOS.Modules.Learning.Domain  
+MyOS.Modules.Finance.Domain  
+MyOS.Modules.Fitness.Domain  
+
+Module Domain projects contain module-specific business logic.
+
+A module Domain project may contain:
+
+- Aggregates
+- Entities
+- Value Objects
+- Domain Events
+- Business Rules
+- Domain Exceptions
+- Enums
+- Domain Services only when business logic does not naturally belong to an entity
+
+Module Domain projects must not depend on:
+
+- MyOS.Api
+- Infrastructure projects
+- EF Core
+- SQLKata
+- ASP.NET Core
+- external services
+
+Business rules must be implemented in module Domain projects whenever they belong to the domain.
+
+Do not place module-specific business logic in Core.
 
 ---
 
@@ -387,6 +432,7 @@ Infrastructure contains:
 * Background services
 * Logging
 * Configuration
+* Serilog configuration
 
 Infrastructure must not contain business logic.
 
@@ -549,24 +595,54 @@ Handlers must safely handle repeated execution of the same command.
 
 ## Logging Rules
 
+Use Serilog for structured logging.
+
+Logging configuration must be centralized in:
+
+MyOS.Api
+or
+MyOS.Core.Infrastructure
+
 Always log:
 
-- errors
+- application startup and shutdown
+- unhandled exceptions
 - warnings
 - important domain events
+- background job failures
+- security-related events
+
+Logs should include when available:
+
+- correlationId
+- traceId
+- userId
+- requestPath
+- moduleName
 
 Never log:
 
 - passwords
-- tokens
+- refresh tokens
+- JWT tokens
+- API keys
 - personal sensitive data
 
 Use structured logging.
 
-Include:
+Prefer:
 
-- correlationId
-- userId when available
+_logger.Information(
+    "Note {NoteId} created by user {UserId}",
+    noteId,
+    userId
+);
+
+Avoid:
+
+_logger.Information(
+    $"Note {noteId} created by user {userId}"
+);
 
 ---
 

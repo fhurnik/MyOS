@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyOS.Core.Infrastructure\MyOS.Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\MyOS.Identity.Application\MyOS.Identity.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Identity.Domain\MyOS.Identity.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
