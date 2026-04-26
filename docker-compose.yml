@@ -1,14 +1,17 @@
 services:
-  myos-sqlserver:
+   myos-sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: myos-sqlserver
+
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: ${SA_PASSWORD}
       MSSQL_PID: "Developer"
       DB_NAME: ${DB_NAME}
+
     ports:
       - "${SQL_PORT}:1433"
+
     volumes:
       - myos-sqlserver-data:/var/opt/mssql
       - ./docker/sqlserver/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -20,6 +23,29 @@ services:
       /docker-entrypoint-initdb.d/init-db.sh &&
       wait
       "
+
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SA_PASSWORD}\" -C -Q \"SELECT 1\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+   migrator:
+    build:
+      context: .
+      dockerfile: MyOS.Migrator/Dockerfile
+
+    container_name: myos-migrator
+    depends_on:
+      myos-sqlserver:
+        condition: service_healthy
+
+    environment:
+      DOTNET_ENVIRONMENT: "Production"
+      ConnectionStrings__Database: "Server=myos-sqlserver,${SQL_PORT};Database=${DB_NAME};User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
+
+    command: ["dotnet", "MyOS.Migrator.dll"]
 
 volumes:
   myos-sqlserver-data:

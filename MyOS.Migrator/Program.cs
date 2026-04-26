@@ -6,9 +6,12 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 var host = Host.CreateDefaultBuilder(args)
-    .ConfigureAppConfiguration((_, configuration) =>
+    .ConfigureAppConfiguration((context, configuration) =>
     {
-        configuration.AddUserSecrets<Program>(optional: false);
+        if (context.HostingEnvironment.IsDevelopment())
+        {
+            configuration.AddUserSecrets<Program>(optional: false);
+        }
     })
     .ConfigureServices((context, services) =>
     {

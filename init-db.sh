@@ -1,10 +1,19 @@
 #!/bin/bash
 
-echo "Waiting for SQL Server to start..."
+echo "Waiting for SQL Server to be ready..."
 
-sleep 20
+until /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost \
+  -U sa \
+  -P "$SA_PASSWORD" \
+  -C \
+  -Q "SELECT 1" > /dev/null 2>&1
+do
+  echo "SQL Server is not ready yet..."
+  sleep 2
+done
 
-echo "Creating database: $DB_NAME"
+echo "SQL Server is ready."
 
 /opt/mssql-tools18/bin/sqlcmd \
   -S localhost \
