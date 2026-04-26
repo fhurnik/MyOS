@@ -1,4 +1,5 @@
 ﻿using FluentMigrator.Runner;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,19 +39,28 @@ var host = Host.CreateDefaultBuilder(args)
 
 using var scope = host.Services.CreateScope();
 
-var logger = scope.ServiceProvider
-    .GetRequiredService<ILoggerFactory>()
-    .CreateLogger("MyOS.Migrator");
-
+var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+var logger = loggerFactory.CreateLogger("MyOS.Migrator");
 var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
 
 try
 {
     logger.LogInformation("Starting database migrations");
-
     runner.MigrateUp();
-
     logger.LogInformation("Database migrations completed successfully");
+
+    // Only update views if migrations succeeded
+    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    var connectionString = configuration.GetConnectionString("Database");
+    var viewsRoot = Path.Combine(AppContext.BaseDirectory, "Views");
+
+    using var dbConnection = new SqlConnection(connectionString);
+    var viewLogger = loggerFactory.CreateLogger<SqlViewSynchronizer>();
+    var synchronizer = new SqlViewSynchronizer(viewLogger, dbConnection, viewsRoot);
+
+    logger.LogInformation("Starting SQL view synchronization");
+    synchronizer.SynchronizeAsync(CancellationToken.None).GetAwaiter().GetResult();
+    logger.LogInformation("SQL view synchronization completed successfully");
 }
 catch (Exception ex)
 {
