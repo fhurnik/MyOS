@@ -1,0 +1,6 @@
+IF DB_ID('$(DB_NAME)') IS NULL
+BEGIN
+    PRINT 'Creating database $(DB_NAME)';
+    CREATE DATABASE $(DB_NAME);
+END
+GO

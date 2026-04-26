@@ -15,6 +15,11 @@
     <File Path="Directory.Build.props" />
     <File Path="docker-compose.yml" />
   </Folder>
+  <Folder Name="/Solution Items/docker/" />
+  <Folder Name="/Solution Items/docker/sqlserver/">
+    <File Path="init-db.sh" />
+    <File Path="init.sql" />
+  </Folder>
   <Project Path="MyOS.API/MyOS.API.csproj" />
   <Project Path="MyOS.Migrator/MyOS.Migrator.csproj" />
 </Solution>
