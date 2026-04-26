@@ -10,7 +10,10 @@
     <Project Path="MyOS.Identity.Infrastructure/MyOS.Identity.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
+    <File Path=".env" />
+    <File Path=".env.example" />
     <File Path="Directory.Build.props" />
+    <File Path="docker-compose.yml" />
   </Folder>
   <Project Path="MyOS.API/MyOS.API.csproj" />
   <Project Path="MyOS.Migrator/MyOS.Migrator.csproj" />

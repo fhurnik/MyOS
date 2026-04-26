@@ -9,6 +9,7 @@ builder.Host.UseSerilog((_, loggerConfiguration) =>
 {
     loggerConfiguration.ConfigureSerilog();
 });
+builder.Configuration.GetConnectionString("Database");
 
 builder.Services.AddCore(builder.Configuration);
 

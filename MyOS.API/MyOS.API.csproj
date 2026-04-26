@@ -1,12 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+	<PropertyGroup>
+		<UserSecretsId>94a2dda8-d836-47cb-b72d-1e1e592e83a6</UserSecretsId>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\MyOS.Core.Infrastructure\MyOS.Core.Infrastructure.csproj" />
-    <ProjectReference Include="..\MyOS.Identity.Infrastructure\MyOS.Identity.Infrastructure.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\MyOS.Core.Infrastructure\MyOS.Core.Infrastructure.csproj" />
+		<ProjectReference Include="..\MyOS.Identity.Infrastructure\MyOS.Identity.Infrastructure.csproj" />
+	</ItemGroup>
 
 </Project>

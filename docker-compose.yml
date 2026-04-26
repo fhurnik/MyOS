@@ -1,0 +1,15 @@
+services:
+  myos-sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: myos-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SA_PASSWORD}
+      MSSQL_PID: "Developer"
+    ports:
+      - "${SQL_PORT}:1433"
+    volumes:
+      - myos-sqlserver-data:/var/opt/mssql
+
+volumes:
+  myos-sqlserver-data:
