@@ -2,7 +2,6 @@ using Asp.Versioning;
 using Microsoft.OpenApi.Models;
 using MyOS.API.Middlewares;
 using MyOS.Core.Infrastructure.Extensions;
-using MyOS.Core.Infrastructure.Localization;
 using MyOS.Core.Infrastructure.Logging;
 using MyOS.Identity.Infrastructure;
 using Serilog;
@@ -89,11 +88,11 @@ app.UseSwaggerUI(options =>
 });
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+app.UseMiddleware<LanguageCultureMiddleware>();
 
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
-app.UseMiddleware<LanguageCultureMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

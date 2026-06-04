@@ -1,9 +1,8 @@
-using Microsoft.AspNetCore.Http;
 using MyOS.Core.Domain.Enums;
 using System.Globalization;
 using System.Security.Claims;
 
-namespace MyOS.Core.Infrastructure.Localization
+namespace MyOS.API.Middlewares
 {
     public sealed class LanguageCultureMiddleware(RequestDelegate next)
     {
