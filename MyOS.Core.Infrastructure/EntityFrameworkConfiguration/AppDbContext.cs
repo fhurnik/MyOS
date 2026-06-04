@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using System.Reflection;
 
 namespace MyOS.Core.Infrastructure.EntityFrameworkConfiguration
 {

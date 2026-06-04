@@ -1,18 +1,18 @@
-﻿using FluentValidation;
+using FluentValidation;
 using MediatR;
 using MyOS.Core.Application.Abstractions.Results;
 
 namespace MyOS.Core.Application.Behaviors
 {
     public sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)
-        : IPipelineBehavior<TRequest, Result<TResponse>> where TRequest : notnull
+        : IPipelineBehavior<TRequest, TResponse>
+        where TRequest : notnull
+        where TResponse : IResult<TResponse>
     {
-        public async Task<Result<TResponse>> Handle(TRequest request, RequestHandlerDelegate<Result<TResponse>> next, CancellationToken cancellationToken)
+        public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
         {
             if (!validators.Any())
-            {
                 return await next(cancellationToken);
-            }
 
             var context = new ValidationContext<TRequest>(request);
 
@@ -26,19 +26,13 @@ namespace MyOS.Core.Application.Behaviors
                 .ToList();
 
             if (failures.Count == 0)
-            {
                 return await next(cancellationToken);
-            }
 
             var message = string.Join(
                 Environment.NewLine,
                 failures.Select(f => f.ErrorMessage));
 
-            var error = Error.Validation(
-                "Validation.Failed",
-                message);
-
-            return Result<TResponse>.Failure(error);
+            return TResponse.Failure(Error.Validation("Validation.Failed", message));
         }
     }
 }

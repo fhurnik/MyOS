@@ -6,4 +6,9 @@
     <ProjectReference Include="..\MyOS.Identity.Domain\MyOS.Identity.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.6" />
+  </ItemGroup>
+
 </Project>

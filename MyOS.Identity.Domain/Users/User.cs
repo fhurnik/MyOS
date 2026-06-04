@@ -1,4 +1,4 @@
-﻿using MyOS.Core.Domain.Entities;
+using MyOS.Core.Domain.Entities;
 
 namespace MyOS.Identity.Domain.Users
 {
@@ -7,53 +7,58 @@ namespace MyOS.Identity.Domain.Users
         public string FirstName { get; private set; }
         public string LastName { get; private set; }
 
-        public string Login { get; private set; }
+        public string Email { get; private set; }
         public string PasswordHash { get; private set; }
 
         public bool IsActive { get; private set; }
 
-        public DateTimeOffset CreatedAtUtc { get; private set; }
-        public DateTimeOffset? UpdatedAtUtc { get; private set; }
+        public DateTime CreatedAtUtc { get; private set; }
+        public DateTime? UpdatedAtUtc { get; private set; }
 
 
-        public static User Create(string firstName, string lastName, string login, string passwordHash)
+        public static User Create(string firstName, string lastName, string email, string passwordHash)
         {
-            return new User(firstName, lastName, login, passwordHash);
+            return new User(firstName, lastName, email, passwordHash);
         }
 
-        internal User(string firstName, string lastName, string login, string passwordHash)
+        internal User(string firstName, string lastName, string email, string passwordHash)
         {
+            Id = Guid.NewGuid();
             FirstName = firstName;
             LastName = lastName;
-            Login = login;
+            Email = email;
             PasswordHash = passwordHash;
 
             IsActive = true;
-            CreatedAtUtc = DateTimeOffset.UtcNow;
+            CreatedAtUtc = DateTime.UtcNow;
         }
 
         internal void Update(string firstName, string lastName)
         {
             FirstName = firstName;
             LastName = lastName;
-            UpdatedAtUtc = DateTimeOffset.UtcNow;
+            UpdatedAtUtc = DateTime.UtcNow;
         }
 
         internal void ChangePassword(string newPasswordHash)
         {
             PasswordHash = newPasswordHash;
-            UpdatedAtUtc = DateTimeOffset.UtcNow;
+            UpdatedAtUtc = DateTime.UtcNow;
         }
 
         internal void ChangeActiveStatus(bool isActive)
         {
             IsActive = isActive;
-            UpdatedAtUtc = DateTimeOffset.UtcNow;
+            UpdatedAtUtc = DateTime.UtcNow;
         }
 
         private User()
         {
             // for EF Core
+            FirstName = null!;
+            LastName = null!;
+            Email = null!;
+            PasswordHash = null!;
         }
     }
 }

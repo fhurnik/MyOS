@@ -1,6 +1,6 @@
 ﻿namespace MyOS.Core.Application.Abstractions.Results
 {
-    public sealed class Result<T>
+    public sealed class Result<T> : IResult<Result<T>>
     {
         private readonly T? _value;
         private Result(bool isSuccess, T? value, Error error)
