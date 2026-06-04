@@ -13,6 +13,7 @@ namespace MyOS.Core.Infrastructure.Logging
                 .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
                 .Enrich.FromLogContext()
+                .Destructure.With<SensitiveDataDestructuringPolicy>()
                 .WriteTo.Console();
         }
 

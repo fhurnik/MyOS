@@ -8,6 +8,7 @@ namespace MyOS.Core.Application.Extensions
     {
         public static IServiceCollection AddCoreApplication(this IServiceCollection services)
         {
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
             return services;
