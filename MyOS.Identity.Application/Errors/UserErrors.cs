@@ -1,25 +1,28 @@
+using MyOS.Core.Application.Abstractions;
 using MyOS.Core.Application.Abstractions.Results;
 
 namespace MyOS.Identity.Application.Errors
 {
-    public static class UserErrors
+    public sealed class UserErrors : ErrorCodes
     {
+        private UserErrors() { } // reflection only — see ErrorCodes base class
+
         public static readonly Error EmailAlreadyInUse =
-            Error.Conflict("User.EmailAlreadyInUse", "A user with this email is already registered.");
+            Error.Conflict("UserErrors.EmailAlreadyInUse");
 
         public static readonly Error InvalidCredentials =
-            Error.Unauthorized("Auth.InvalidCredentials", "Email or password is incorrect.");
+            Error.Unauthorized("UserErrors.InvalidCredentials");
 
         public static readonly Error AccountDisabled =
-            Error.Unauthorized("Auth.AccountDisabled", "Account is disabled.");
+            Error.Unauthorized("UserErrors.AccountDisabled");
 
         public static readonly Error InvalidRefreshToken =
-            Error.Unauthorized("Auth.InvalidRefreshToken", "Refresh token is invalid or expired.");
+            Error.Unauthorized("UserErrors.InvalidRefreshToken");
 
         public static readonly Error Unauthorized =
-            Error.Unauthorized("Auth.Unauthorized", "Access token is missing or invalid.");
+            Error.Unauthorized("UserErrors.Unauthorized");
 
         public static readonly Error Forbidden =
-            Error.Forbidden("Auth.Forbidden", "You do not have permission to access this resource.");
+            Error.Forbidden("UserErrors.Forbidden");
     }
 }

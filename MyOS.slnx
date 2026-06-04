@@ -22,4 +22,5 @@
   </Folder>
   <Project Path="MyOS.API/MyOS.API.csproj" />
   <Project Path="MyOS.Migrator/MyOS.Migrator.csproj" />
+  <Project Path="MyOS.Tests/MyOS.Tests.csproj" />
 </Solution>

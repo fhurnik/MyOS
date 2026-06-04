@@ -1,3 +1,5 @@
+using MyOS.Core.Domain.Enums;
+
 namespace MyOS.Core.Application.Abstractions
 {
     public interface ICurrentUser
@@ -5,5 +7,6 @@ namespace MyOS.Core.Application.Abstractions
         Guid Id { get; }
         string Email { get; }
         bool IsAuthenticated { get; }
+        Language Language { get; }
     }
 }

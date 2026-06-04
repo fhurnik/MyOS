@@ -1,7 +1,7 @@
 # CLAUDE.md — MyOS Project Context
 
 > Single source of truth for AI assistants (Claude, Copilot, Cursor, ChatGPT, etc.).
-> Last verified and updated: 2026-06-04 (session: JWT auth + ICurrentUser implementation).
+> Last verified and updated: 2026-06-04 (session: trim + restructure — removed redundant code blocks, moved "Things AI Must Never Do" to top).
 
 ---
 
@@ -21,6 +21,32 @@ Architecture follows **pragmatic DDD**, **CQRS**, and **Clean Architecture** wit
 
 ---
 
+## Things AI Must Never Do
+
+- Put business logic in controllers
+- Use DbContext or EF Core in query handlers
+- Create unnecessary abstractions or interfaces for everything
+- Create static state
+- Bypass validation
+- Mix layers
+- Physically delete records when soft delete applies to that entity
+- Create tight coupling between modules
+- Call `SaveChanges` more than once per command handler
+- Start transactions in controllers or repositories
+- Use string interpolation in log messages
+- Return domain entities directly from API
+- Use Minimal API (use Controllers)
+- Use EF Core migrations (use FluentMigrator)
+- Hardcode error codes as inline strings in handlers — use static error classes (`UserErrors.*`)
+- Put error messages inline in error code classes — messages go in `.resx` resource files only
+- Use magic strings for resource manifest names — derive from `typeof().Namespace` + language code map
+- Define `IUnitOfWork` per-module — it lives in `Core.Application` and is shared
+- Add a custom JWT validation middleware — use `JwtBearerEvents` for auth failure format
+- Add soft delete (`DeletedAtUtc`) to an entity unless that entity's lifecycle specifically requires it
+- Create error code classes as `static class` — must be `sealed class : ErrorCodes` for test discovery
+
+---
+
 ## Solution Structure
 
 ```
@@ -35,9 +61,11 @@ MyOS/                                      ← repo root
 ├── MyOS.API/                              ← Web API entry point
 ├── MyOS.Migrator/                         ← Database migrations + SQL view sync
 │
-├── MyOS.Core.Domain/                      ← Shared base entities
-├── MyOS.Core.Application/                 ← Shared CQRS contracts, Result, pagination, ICurrentUser, IUnitOfWork
-├── MyOS.Core.Infrastructure/              ← EF Core setup, Serilog, DI extensions, CurrentUserService, UnitOfWork
+├── MyOS.Core.Domain/                      ← Shared base entities, Language enum
+├── MyOS.Core.Application/                 ← Shared CQRS contracts, Result, pagination, ICurrentUser, IUnitOfWork, IErrorTranslator
+├── MyOS.Core.Infrastructure/              ← EF Core setup, Serilog, DI extensions, CurrentUserService, UnitOfWork, ErrorTranslator
+│
+├── MyOS.Tests/                            ← Unit tests (translation completeness, error code conventions)
 │
 ├── MyOS.Identity.Domain/
 ├── MyOS.Identity.Application/
@@ -93,50 +121,13 @@ This method registers: EF configurations, repositories, services, background ser
 
 The API project never registers internal module services directly — it calls only `Add{ModuleName}Module(...)`.
 
-**Current example** (`MyOS.Identity.Infrastructure/DependencyInjection.cs`):
-```csharp
-public static IServiceCollection AddIdentityModule(
-    this IServiceCollection services,
-    IConfiguration configuration)
-{
-    services.AddEfConfigurationsFromAssembly(typeof(UserEntityConfiguration).Assembly);
-    services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
-    services.AddScoped<IUserRepository, UserRepository>();
-    services.AddScoped<IPasswordHasher, PasswordHasher>();
-    services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
-    services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options => { /* TokenValidationParameters + JwtBearerEvents */ });
-    services.AddIdentityApplication(); // registers MediatR + validators for this module
-    return services;
-}
-```
+**Reference implementation:** `MyOS.Identity.Infrastructure/Extensions/DependencyInjection.cs` — registers EF configs, `JwtSettings`, repos, services, auth, and calls `AddIdentityApplication()`.
 
-**`AddIdentityApplication()`** — internal DI extension in each module's Application project:
-```csharp
-public static IServiceCollection AddIdentityApplication(this IServiceCollection services)
-{
-    services.AddMediatR(cfg =>
-        cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
-    services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
-    return services;
-}
-```
+**`AddIdentityApplication()`** — internal DI extension in each module's Application project: registers MediatR + validators for this module.
 
 **MediatR is registered per-module** (not globally). `AddCoreApplication()` only adds `ValidationBehavior`.
 
-**Core registration** (`MyOS.Core.Infrastructure/Extensions/DependencyInjection.cs`):
-```csharp
-public static IServiceCollection AddCore(this IServiceCollection services, IConfiguration configuration)
-{
-    services.AddCoreApplication();        // ValidationBehavior pipeline
-    services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(configuration.GetConnectionString("Database")));
-    services.AddScoped<IUnitOfWork, UnitOfWork>();
-    services.AddHttpContextAccessor();
-    services.AddScoped<ICurrentUser, CurrentUserService>();
-    return services;
-}
-```
+**`AddCore()` registers** (`Core.Infrastructure/Extensions/DependencyInjection.cs`): `ValidationBehavior` pipeline (via `AddCoreApplication()`), `AppDbContext` (SQL Server), `IUnitOfWork`, `ICurrentUser` (`CurrentUserService`).
 
 ---
 
@@ -206,23 +197,32 @@ Never hardcode error codes as inline strings in handlers. Use static error class
 **Pattern:**
 ```csharp
 // MyOS.Identity.Application/Errors/UserErrors.cs
-public static class UserErrors
+public sealed class UserErrors : ErrorCodes
 {
-    public static readonly Error EmailAlreadyInUse =
-        Error.Conflict("User.EmailAlreadyInUse", "A user with this email is already registered.");
-    public static readonly Error InvalidCredentials =
-        Error.Unauthorized("Auth.InvalidCredentials", "Email or password is incorrect.");
+    private UserErrors() { } // reflection only — see ErrorCodes base class
+
+    public static readonly Error EmailAlreadyInUse = Error.Conflict("UserErrors.EmailAlreadyInUse");
+    public static readonly Error InvalidCredentials = Error.Unauthorized("UserErrors.InvalidCredentials");
     // ...
 }
 ```
+
+**Rules:**
+- Class must be `sealed class` inheriting `ErrorCodes` (not `static class`) — enables reflection-based test discovery
+- Private constructor — prevents instantiation; comment explains it's for reflection
+- **No `message` in the code** — messages live in `.resx` resource files, never inline
+- **Code format: `{ClassName}.{FieldName}`** — e.g. class `UserErrors`, field `InvalidCredentials` → code `"UserErrors.InvalidCredentials"`. This is enforced by a unit test.
+- Use optional `parameters` dict when error message has placeholders: `Error.NotFound("UserErrors.NotFound", new Dictionary<string,string> { {"id", userId.ToString()} })`
 
 **Location:** `{Module}.Application/Errors/{Entity}Errors.cs`
 — in **Application** layer (not Domain), because `Error` type is from `Core.Application`.
 
 **In handlers:**
 ```csharp
-return Result<Guid>.Failure(UserErrors.EmailAlreadyInUse);   // not: Error.Conflict("User.EmailAlreadyInUse", "...")
+return Result<Guid>.Failure(UserErrors.EmailAlreadyInUse);   // not: Error.Conflict("UserErrors.EmailAlreadyInUse")
 ```
+
+**Messages are translated at the API boundary** — handlers never deal with message strings.
 
 ---
 
@@ -251,12 +251,14 @@ public interface ICurrentUser
     Guid Id { get; }
     string Email { get; }
     bool IsAuthenticated { get; }
+    Language Language { get; }
 }
 ```
 
 - Any module's handler can inject `ICurrentUser` to get caller context (ownership checks, audit, data scoping).
 - `Id` and `Email` throw `InvalidOperationException` if accessed when `IsAuthenticated == false` — accessing them on an `[Authorize]` endpoint is always safe.
 - Check `IsAuthenticated` first on endpoints that allow anonymous access.
+- `Language` defaults to `Language.English` for unauthenticated requests — safe to read without checking `IsAuthenticated`.
 
 ---
 
@@ -279,19 +281,9 @@ public sealed class Result<T>
 }
 ```
 
-```csharp
-public sealed record Error(string Code, string Message, ErrorType Type)
-{
-    public static readonly Error None;
-    public static Error Validation(string code, string message);
-    public static Error NotFound(string code, string message);
-    public static Error Conflict(string code, string message);
-    public static Error Unauthorized(string code, string message);
-    public static Error Forbidden(string code, string message);
-    public static Error Failure(string code, string message);
-    public static Error Unexpected(string code, string message);
-}
-```
+`Error(Code, Message, Type, Parameters?)` — factories: `Validation(code, message, params?)` and `NotFound / Conflict / Unauthorized / Forbidden / Failure / Unexpected(code, params?, message="")`. Message defaults to `""` — resolved from `.resx` at the API boundary.
+
+`Parameters` enables placeholder substitution in translated messages: `{email}`, `{max}`, etc.
 
 ```csharp
 public enum ErrorType { None, Validation, NotFound, Conflict, Unauthorized, Forbidden, Failure, Unexpected }
@@ -315,10 +307,13 @@ public enum ErrorType { None, Validation, NotFound, Conflict, Unauthorized, Forb
 [ApiController]
 public abstract class ApiControllerBase : ControllerBase
 {
+    // IErrorTranslator and ICurrentUser resolved lazily from HttpContext.RequestServices
     protected IActionResult HandleResult<T>(Result<T> result)
-        => result.ToActionResult(HttpContext);
+        => result.ToActionResult(HttpContext, ErrorTranslator, CurrentUser);
 }
 ```
+
+`ErrorTranslator` resolves the `Error.Message` from `.resx` using `ICurrentUser.Language` before building `ProblemDetails`.
 
 **Result → HTTP mapping** (`ResultExtensions.ToActionResult`):
 
@@ -380,12 +375,7 @@ Implemented via `JwtBearerEvents` in `Identity.Infrastructure/DependencyInjectio
 
 Returns `ProblemDetails` with status 500 — never exposes stack traces.
 
-Logs with structured logging:
-```csharp
-logger.LogError(exception,
-    "Unhandled exception occurred while processing request {Method} {Path}",
-    context.Request.Method, context.Request.Path);
-```
+Logs with structured logging (message template format — see Logging section).
 
 ---
 
@@ -406,13 +396,7 @@ FluentValidation via MediatR pipeline behavior (`ValidationBehavior<TRequest, TR
 
 ## Domain Layer
 
-**Base entity** (`MyOS.Core.Domain/Entities/Entity.cs`):
-```csharp
-public abstract class Entity
-{
-    public Guid Id { get; protected set; }
-}
-```
+**Base entity** (`Core.Domain/Entities/Entity.cs`): `abstract class Entity` with `Guid Id { get; protected set; }`.
 
 **Entity rules:**
 - Constructors are `internal` — use static factory methods (`Create(...)`)
@@ -421,26 +405,6 @@ public abstract class Entity
 - Private parameterless constructor for EF Core (initialize non-nullable strings with `null!`)
 - Timestamps: `CreatedAtUtc` (DateTime), `UpdatedAtUtc` (DateTime?) — add per entity as needed
 - Soft delete (`DeletedAtUtc`) is a global convention but must be added explicitly per entity — do not add it unless that entity's lifecycle requires it
-
-**Example — `User` entity:**
-```csharp
-public class User : Entity
-{
-    public string FirstName { get; private set; }
-    public string LastName { get; private set; }
-    public string Email { get; private set; }
-    public string PasswordHash { get; private set; }
-    public bool IsActive { get; private set; }
-    public DateTime CreatedAtUtc { get; private set; }
-    public DateTime? UpdatedAtUtc { get; private set; }
-
-    public static User Create(string firstName, string lastName, string email, string passwordHash);
-    internal void Update(string firstName, string lastName);
-    internal void ChangePassword(string newPasswordHash);
-    internal void ChangeActiveStatus(bool isActive);
-    private User() { FirstName = null!; LastName = null!; Email = null!; PasswordHash = null!; }
-}
-```
 
 **Domain layer contains:**
 - Entities, Aggregates, Value Objects
@@ -481,20 +445,7 @@ public abstract class EntityConfiguration<TEntity> : IEntityTypeConfiguration<TE
     where TEntity : Entity
 ```
 
-**Always map all columns explicitly** in entity configurations — do not rely on EF Core naming conventions:
-```csharp
-internal class UserEntityConfiguration : EntityConfiguration<User>
-{
-    public override void Configure(EntityTypeBuilder<User> builder)
-    {
-        builder.ToTable("users", "identity");
-        builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.Email).HasColumnName("email").HasMaxLength(255);
-        // ... all columns explicitly mapped
-    }
-}
-```
+**Always map all columns explicitly** in entity configurations — do not rely on EF Core naming conventions. See `Identity.Infrastructure/EntityConfigurations/` for reference.
 
 **Infrastructure contains:** EF Core, SQLKata, repositories, external services, background services, logging config, Serilog.
 
@@ -592,6 +543,91 @@ FROM [identity].[users];
 
 ---
 
+## Internationalisation (i18n)
+
+**Implemented.** Language is stored in DB and included as a `"language"` claim in the JWT access token.
+
+### Language enum
+
+`MyOS.Core.Domain/Enums/Language.cs` — shared across all modules:
+```csharp
+public enum Language { English = 0, Polish = 1 }
+```
+
+### Error message translation pipeline
+
+1. Domain errors are created with **only a code** — no inline message:
+   ```csharp
+   Error.Unauthorized("UserErrors.InvalidCredentials")
+   ```
+2. `IErrorTranslator` (`Core.Application`) resolves the message from `.resx` at the API boundary using the current user's language.
+3. Validation errors (from FluentValidation) carry their message directly in `Error.Message` — translator passes them through unchanged.
+4. `LanguageCultureMiddleware` (`Core.Infrastructure`) sets `CultureInfo.CurrentCulture` / `CurrentUICulture` from the JWT claim so FluentValidation uses the correct language automatically.
+
+### Resource files — per module
+
+Each module's Application project contains `.resx` files in `Resources/`:
+```
+{Module}.Application/Resources/
+├── {Module}Errors_en.resx
+└── {Module}Errors_pl.resx
+```
+
+**Naming conventions:**
+- File: `{ModuleName}Errors_{langCode}.resx` — e.g. `IdentityErrors_en.resx`
+- Key format: `{ClassName}.{FieldName}` — e.g. `UserErrors.InvalidCredentials`
+- Lang code derived from `Language` enum via explicit ISO code map (`English → "en"`, `Polish → "pl"`)
+
+**Embed in csproj** (without `<LogicalName>` — let SDK compute the manifest name):
+```xml
+<EmbeddedResource Update="Resources\IdentityErrors_en.resx" />
+<EmbeddedResource Update="Resources\IdentityErrors_pl.resx" />
+```
+
+**Placeholder substitution:** use `{key}` in translated strings, pass values via `Error.Parameters`:
+```csharp
+Error.NotFound("UserErrors.NotFound", new Dictionary<string,string> { {"id", id.ToString()} })
+// .resx: "User with id {id} was not found."
+```
+
+### IErrorMessageProvider
+
+Each module registers its own `IErrorMessageProvider` (singleton) in `Add{Name}Application()` via `services.AddSingleton<IErrorMessageProvider, {Name}ErrorMessageProvider>()`.
+
+The provider builds `ResourceManager` instances from `typeof(Provider).Namespace` + language code — no magic strings.
+
+`IErrorTranslator` (registered in `AddCore()`) collects all `IErrorMessageProvider` instances via `IEnumerable<IErrorMessageProvider>`.
+
+### ErrorCodes base class
+
+`MyOS.Core.Application/Abstractions/ErrorCodes.cs` — marker for reflection-based test discovery:
+```csharp
+public abstract class ErrorCodes
+{
+    protected ErrorCodes() { } // subclasses use private constructor — reflection only
+}
+```
+
+All error code classes inherit `ErrorCodes`. This enables the translation completeness test to discover all error codes automatically.
+
+### Language change endpoint
+
+`PATCH /api/v1/users/me/language` — updates language in DB and returns new `AuthTokens` (with updated `language` claim). Client must use the new access token for subsequent requests.
+
+### Translation tests (`MyOS.Tests`)
+
+Three tests enforce correctness at build/CI time:
+
+| Test class | What it checks |
+|---|---|
+| `TranslationCompletenessTests` | Every error code has a translation for every `Language` enum value |
+| `ErrorCodeConventionTests` | `Error.Code == "{ClassName}.{FieldName}"` for every static field |
+| `ResourceKeyConventionTests` | Every `.resx` key exists as a real error code (no orphans) + correct format |
+
+All tests use `ErrorTestFixture` which discovers assemblies and resource manifests via reflection — **no magic strings**.
+
+---
+
 ## Security
 
 - JWT authentication — **implemented** (`Microsoft.AspNetCore.Authentication.JwtBearer`)
@@ -619,17 +655,7 @@ Currently implemented: Serilog structured logging, `traceId` and `correlationId`
 
 ## Pagination
 
-`PagingRequest` and `PagingList<T>` are in `MyOS.Core.Application/Abstractions/Pagination/`.
-
-```csharp
-public class PagingRequest
-{
-    public int Page { get; init; } = 1;
-    public int PageSize { get; init; } = 10;
-    public int Skip => (Page - 1) * PageSize;
-    public int Take => PageSize > 100 ? 100 : PageSize; // max 100
-}
-```
+`PagingRequest` and `PagingList<T>` in `Core.Application/Abstractions/Pagination/`. Max `PageSize` = 100.
 
 ---
 
@@ -685,76 +711,46 @@ Connection string env var: `ConnectionStrings__Database`
 
 ## Global Build Configuration
 
-`Directory.Build.props` applies to all projects:
-
-```xml
-<TargetFramework>net10.0</TargetFramework>
-<Nullable>enable</Nullable>
-<ImplicitUsings>enable</ImplicitUsings>
-<LangVersion>latest</LangVersion>
-<GenerateDocumentationFile>true</GenerateDocumentationFile>
-```
+All projects via `Directory.Build.props`: `net10.0`, nullable enable, implicit usings, `LangVersion latest`, `GenerateDocumentationFile true`.
 
 ---
 
 ## Key NuGet Packages
 
-| Package | Version | Used in |
-|---|---|---|
-| MediatR | 14.1.0 | Core.Application |
-| FluentValidation | 12.1.1 | Core.Application, Identity.Application |
-| FluentValidation.DependencyInjectionExtensions | 12.1.1 | Identity.Application |
-| Microsoft.Extensions.Options | 10.0.7 | Identity.Application |
-| EF Core (SqlServer) | 10.0.8 | Core.Infrastructure |
-| Serilog | 4.3.1 | Core.Infrastructure |
-| Serilog.Extensions.Hosting | 10.0.0 | Core.Infrastructure |
-| Serilog.Sinks.Console | 6.1.1 | Core.Infrastructure |
-| FrameworkReference: Microsoft.AspNetCore.App | — | Core.Infrastructure (for IHttpContextAccessor) |
-| BCrypt.Net-Next | 4.0.3 | Identity.Infrastructure |
-| Microsoft.AspNetCore.Authentication.JwtBearer | 10.0.6 | Identity.Infrastructure |
-| Asp.Versioning.Mvc | 8.1.0 | MyOS.API |
-| Microsoft.AspNetCore.OpenApi | 10.0.6 | MyOS.API |
-| FluentMigrator | 8.0.1 | MyOS.Migrator |
+| Package | Used in |
+|---|---|
+| MediatR | Core.Application |
+| FluentValidation + DI Extensions | Core.Application, Identity.Application |
+| EF Core (SqlServer) | Core.Infrastructure |
+| Serilog (+Extensions.Hosting, +Sinks.Console) | Core.Infrastructure |
+| FrameworkReference: Microsoft.AspNetCore.App | Core.Infrastructure (IHttpContextAccessor) |
+| Microsoft.AspNetCore.Authentication.JwtBearer | Identity.Infrastructure |
+| BCrypt.Net-Next | Identity.Infrastructure |
+| Asp.Versioning.Mvc | MyOS.API |
+| FluentMigrator | MyOS.Migrator |
 
 **SQLKata** — referenced in instructions for query-side reads but **not yet in any csproj**. Add to module Infrastructure when implementing the first Query handler.
 
 ---
 
-## Testing (Planned)
+## Testing
 
-| Type | Tool | Purpose |
-|---|---|---|
-| Unit | xUnit | Domain logic |
-| Integration | xUnit + Testcontainers | API endpoints |
-| Architecture | ArchUnitNET or NetArchTest | Layer boundary enforcement |
+| Type | Tool | Status | Purpose |
+|---|---|---|---|
+| Unit | xUnit | **Implemented** (`MyOS.Tests`) | Translation completeness, error code conventions |
+| Integration | xUnit + Testcontainers | Planned | API endpoints with real SQL Server |
+| Architecture | ArchUnitNET or NetArchTest | Planned | Layer boundary enforcement |
+
+**Implemented tests** (`MyOS.Tests/Translation/`):
+- `TranslationCompletenessTests` — all error codes have translations for all languages
+- `ErrorCodeConventionTests` — `Error.Code` matches `"{ClassName}.{FieldName}"`
+- `ResourceKeyConventionTests` — no orphaned `.resx` keys, correct format
 
 Rules:
 - Tests must be deterministic, isolated, not dependent on local machine state
 - Integration tests use Testcontainers (real SQL Server in Docker)
 - No mocking the database in integration tests
-
----
-
-## Things AI Must Never Do
-
-- Put business logic in controllers
-- Use DbContext or EF Core in query handlers
-- Create unnecessary abstractions or interfaces for everything
-- Create static state
-- Bypass validation
-- Mix layers
-- Physically delete records when soft delete applies to that entity
-- Create tight coupling between modules
-- Call `SaveChanges` more than once per command handler
-- Start transactions in controllers or repositories
-- Use string interpolation in log messages
-- Return domain entities directly from API
-- Use Minimal API (use Controllers)
-- Use EF Core migrations (use FluentMigrator)
-- Hardcode error codes/messages as inline strings — use static error classes (`UserErrors.*`)
-- Define `IUnitOfWork` per-module — it lives in `Core.Application` and is shared
-- Add a custom JWT validation middleware — use `JwtBearerEvents` for auth failure format
-- Add soft delete (`DeletedAtUtc`) to an entity unless that entity's lifecycle specifically requires it
+- When adding a new error code, the translation tests in CI will catch missing `.resx` entries
 
 ---
 
@@ -765,13 +761,16 @@ Rules:
 3. Add table migrations per entity
 4. Add SQL views in `Views/{Name}/v_{name}.sql`
 5. Implement domain entities extending `Entity`, repository interfaces in Domain
-6. Create `{Entity}Errors.cs` in `{Name}.Application/Errors/` for static error definitions
-7. Implement commands (slice: command + validator + handler in one file) and queries with handlers
-8. Add EF entity configurations extending `EntityConfiguration<T>` with full explicit column mapping
-9. Add `Add{Name}Application()` DI extension in Application (registers MediatR + validators for this assembly)
-10. Expose `Add{Name}Module(IServiceCollection, IConfiguration)` from Infrastructure DI — registers EF configs, repos, application DI
-11. Register in `Program.cs` via `builder.Services.Add{Name}Module(builder.Configuration)`
-12. Add controllers in `MyOS.API/` extending `ApiControllerBase`, with `[ApiVersion("1.0")]` and `[Authorize]` where needed
+6. Create `{Entity}Errors.cs` in `{Name}.Application/Errors/` — `sealed class : ErrorCodes`, private constructor, codes only (no messages), format `{ClassName}.{FieldName}`
+7. Create `{Name}Errors_en.resx` and `{Name}Errors_pl.resx` in `{Name}.Application/Resources/` with translations for every error code. Add `<EmbeddedResource Update="...">` in `.csproj` for each.
+8. Create `{Name}ErrorMessageProvider` in `{Name}.Application/Resources/` — builds `ResourceManager` from `typeof(Provider).Namespace` + language code map. Register as `services.AddSingleton<IErrorMessageProvider, {Name}ErrorMessageProvider>()` in `Add{Name}Application()`.
+9. Register `{Name}ErrorMessageProvider` assembly in `ErrorTestFixture.ModuleAssemblies` and `Providers` in `MyOS.Tests` so translation tests cover it automatically.
+10. Implement commands (slice: command + validator + handler in one file) and queries with handlers
+11. Add EF entity configurations extending `EntityConfiguration<T>` with full explicit column mapping
+12. Add `Add{Name}Application()` DI extension in Application (registers MediatR + validators + `IErrorMessageProvider` for this assembly)
+13. Expose `Add{Name}Module(IServiceCollection, IConfiguration)` from Infrastructure DI — registers EF configs, repos, application DI
+14. Register in `Program.cs` via `builder.Services.Add{Name}Module(builder.Configuration)`
+15. Add controllers in `MyOS.API/` extending `ApiControllerBase`, with `[ApiVersion("1.0")]` and `[Authorize]` where needed
 
 ---
 
@@ -780,4 +779,5 @@ Rules:
 - `copilot-instructions.md` shows solution path as `src/MyOS.Api`, but the actual project is `MyOS.API/` at repo root (no `src/` folder in use)
 - `copilot-instructions.md` mentions `MyOS.Modules.*` naming — current Identity module uses `MyOS.Identity.*` (without `Modules` segment). Future modules should follow `MyOS.Modules.{Name}.*`
 - System migration `20260426_CreateSqlFileHistoryTable.cs` uses `[Migration(2026042601)]` format (no time component) — standardize on full `YYYYMMDDHHNN` format for all new migrations
-- OpenTelemetry, health checks, SQLKata, test projects — **planned, not implemented**
+- OpenTelemetry, health checks, SQLKata — **planned, not implemented**
+- `MyOS.Tests` — **implemented** (translation completeness + error code convention tests)

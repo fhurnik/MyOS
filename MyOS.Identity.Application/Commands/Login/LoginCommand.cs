@@ -38,7 +38,7 @@ namespace MyOS.Identity.Application.Commands.Login
             if (!user.IsActive)
                 return Result<AuthTokens>.Failure(UserErrors.AccountDisabled);
 
-            var accessToken = jwtTokenGenerator.GenerateAccessToken(user.Id, user.Email);
+            var accessToken = jwtTokenGenerator.GenerateAccessToken(user.Id, user.Email, user.Language);
             var rawRefreshToken = jwtTokenGenerator.GenerateRefreshToken();
             var expiresAt = DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpiryDays);
 

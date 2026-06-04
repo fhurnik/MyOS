@@ -23,6 +23,8 @@ namespace MyOS.Core.Infrastructure.Extensions
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUser, CurrentUserService>();
 
+            services.AddScoped<IErrorTranslator, ErrorTranslator>();
+
             return services;
         }
     }

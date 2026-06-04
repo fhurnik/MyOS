@@ -1,6 +1,8 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using MyOS.Core.Application.Abstractions;
+using MyOS.Identity.Application.Resources;
 
 namespace MyOS.Identity.Application.Extensions
 {
@@ -12,6 +14,8 @@ namespace MyOS.Identity.Application.Extensions
                 cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly));
 
             services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+
+            services.AddSingleton<IErrorMessageProvider, IdentityErrorMessageProvider>();
 
             return services;
         }

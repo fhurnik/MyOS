@@ -45,7 +45,7 @@ namespace MyOS.Identity.Application.Commands.RefreshToken
             var newRefreshToken = DomainRefreshToken.Create(user.Id, newRawToken, expiresAt);
             await userRepository.AddRefreshTokenAsync(newRefreshToken, cancellationToken);
 
-            var accessToken = jwtTokenGenerator.GenerateAccessToken(user.Id, user.Email);
+            var accessToken = jwtTokenGenerator.GenerateAccessToken(user.Id, user.Email, user.Language);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Result<AuthTokens>.Success(new AuthTokens(accessToken, newRawToken));

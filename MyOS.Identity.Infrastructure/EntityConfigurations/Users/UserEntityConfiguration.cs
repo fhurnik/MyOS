@@ -18,6 +18,7 @@ namespace MyOS.Identity.Infrastructure.EntityConfigurations.Users
             builder.Property(x => x.FirstName).HasColumnName("first_name").HasMaxLength(100);
             builder.Property(x => x.LastName).HasColumnName("last_name").HasMaxLength(100);
             builder.Property(x => x.IsActive).HasColumnName("is_active");
+            builder.Property(x => x.Language).HasColumnName("language");
             builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc");
             builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
         }

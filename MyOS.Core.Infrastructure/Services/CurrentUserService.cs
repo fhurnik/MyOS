@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using MyOS.Core.Application.Abstractions;
+using MyOS.Core.Domain.Enums;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -31,6 +32,17 @@ namespace MyOS.Core.Infrastructure.Services
                     throw new InvalidOperationException("Cannot access user Email for an unauthenticated request.");
 
                 return User!.FindFirstValue(JwtRegisteredClaimNames.Email)!;
+            }
+        }
+
+        public Language Language
+        {
+            get
+            {
+                var value = User?.FindFirstValue("language");
+                return value is not null && Enum.TryParse<Language>(value, out var language)
+                    ? language
+                    : Language.English;
             }
         }
     }

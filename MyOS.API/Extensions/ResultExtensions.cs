@@ -1,5 +1,6 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MyOS.Core.Application.Abstractions;
 using MyOS.Core.Application.Abstractions.Results;
 using System.Diagnostics;
 
@@ -7,19 +8,19 @@ namespace MyOS.API.Extensions
 {
     public static class ResultExtensions
     {
-        public static IActionResult ToActionResult<T>(this Result<T> result, HttpContext httpContext)
+        public static IActionResult ToActionResult<T>(this Result<T> result, HttpContext httpContext,
+            IErrorTranslator errorTranslator, ICurrentUser currentUser)
         {
             if (result.IsSuccess)
             {
                 if (result.Value is Unit)
-                {
                     return new NoContentResult();
-                }
 
                 return new OkObjectResult(result.Value);
             }
 
-            var problem = CreateProblemDetails(result.Error, httpContext);
+            var message = errorTranslator.Translate(result.Error, currentUser.Language);
+            var problem = CreateProblemDetails(result.Error, message, httpContext);
 
             return new ObjectResult(problem)
             {
@@ -27,7 +28,7 @@ namespace MyOS.API.Extensions
             };
         }
 
-        private static ProblemDetails CreateProblemDetails(Error error, HttpContext httpContext)
+        private static ProblemDetails CreateProblemDetails(Error error, string message, HttpContext httpContext)
         {
             var status = error.Type switch
             {
@@ -43,7 +44,7 @@ namespace MyOS.API.Extensions
             {
                 Status = status,
                 Title = error.Type.ToString(),
-                Detail = error.Message,
+                Detail = message,
                 Instance = httpContext.Request.Path
             };
 

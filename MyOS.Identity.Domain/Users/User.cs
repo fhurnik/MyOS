@@ -1,4 +1,5 @@
 using MyOS.Core.Domain.Entities;
+using MyOS.Core.Domain.Enums;
 
 namespace MyOS.Identity.Domain.Users
 {
@@ -11,23 +12,27 @@ namespace MyOS.Identity.Domain.Users
         public string PasswordHash { get; private set; }
 
         public bool IsActive { get; private set; }
+        public Language Language { get; private set; }
 
         public DateTime CreatedAtUtc { get; private set; }
         public DateTime? UpdatedAtUtc { get; private set; }
 
 
-        public static User Create(string firstName, string lastName, string email, string passwordHash)
+        public static User Create(string firstName, string lastName, string email, string passwordHash,
+            Language language = Language.English)
         {
-            return new User(firstName, lastName, email, passwordHash);
+            return new User(firstName, lastName, email, passwordHash, language);
         }
 
-        internal User(string firstName, string lastName, string email, string passwordHash)
+        internal User(string firstName, string lastName, string email, string passwordHash,
+            Language language = Language.English)
         {
             Id = Guid.NewGuid();
             FirstName = firstName;
             LastName = lastName;
             Email = email;
             PasswordHash = passwordHash;
+            Language = language;
 
             IsActive = true;
             CreatedAtUtc = DateTime.UtcNow;
@@ -49,6 +54,12 @@ namespace MyOS.Identity.Domain.Users
         internal void ChangeActiveStatus(bool isActive)
         {
             IsActive = isActive;
+            UpdatedAtUtc = DateTime.UtcNow;
+        }
+
+        public void ChangeLanguage(Language language)
+        {
+            Language = language;
             UpdatedAtUtc = DateTime.UtcNow;
         }
 
