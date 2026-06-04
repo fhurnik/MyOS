@@ -62,7 +62,7 @@ MyOS/                                      ← repo root
 ├── MyOS.Migrator/                         ← Database migrations + SQL view sync
 │
 ├── MyOS.Core.Domain/                      ← Shared base entities, Language enum
-├── MyOS.Core.Application/                 ← Shared CQRS contracts, Result, pagination, ICurrentUser, IUnitOfWork, IErrorTranslator
+├── MyOS.Core.Application/                 ← Shared CQRS contracts, Result, pagination, ICurrentUser, IUnitOfWork, IErrorTranslator, SQLKata extensions
 ├── MyOS.Core.Infrastructure/              ← EF Core setup, Serilog, DI extensions, CurrentUserService, UnitOfWork, ErrorTranslator
 │
 ├── MyOS.Tests/                            ← Unit tests (translation completeness, error code conventions)
@@ -125,9 +125,9 @@ The API project never registers internal module services directly — it calls o
 
 **`AddIdentityApplication()`** — internal DI extension in each module's Application project: registers MediatR + validators for this module.
 
-**MediatR is registered per-module** (not globally). `AddCoreApplication()` only adds `ValidationBehavior`.
+**MediatR is registered per-module** (not globally). `AddCoreApplication()` adds `LoggingBehavior` and `ValidationBehavior` (in that order — logging wraps validation).
 
-**`AddCore()` registers** (`Core.Infrastructure/Extensions/DependencyInjection.cs`): `ValidationBehavior` pipeline (via `AddCoreApplication()`), `AppDbContext` (SQL Server), `IUnitOfWork`, `ICurrentUser` (`CurrentUserService`).
+**`AddCore()` registers** (`Core.Infrastructure/Extensions/DependencyInjection.cs`): `LoggingBehavior` + `ValidationBehavior` pipeline (via `AddCoreApplication()`), `AppDbContext` (SQL Server), `QueryFactory` (SQLKata, scoped), `IUnitOfWork`, `ICurrentUser` (`CurrentUserService`).
 
 ---
 
@@ -159,6 +159,10 @@ public interface IQueryHandler<Query, TResponse> : IRequestHandler<Query, Result
 - Commands use EF Core + Domain entities + `IUnitOfWork.SaveChangesAsync` (once per handler).
 - Never call `SaveChanges` more than once per command handler.
 - All command handlers inject `IUnitOfWork` and call it at the end.
+
+**SQLKata helpers** (`Core.Application/SqlKata/QueryExtensions.cs`):
+- `query.GetPagingListAsync<T>(PagingRequest, CancellationToken)` — executes COUNT + paged SELECT, returns `PagingList<T>`
+- Inject `QueryFactory db`, build query with `db.Query(...)`, chain conditions, call extension at the end
 
 **MediatR** is the mediator. Registered per-module via `AddIdentityApplication()` pattern.
 
@@ -678,6 +682,16 @@ _logger.Information($"Note {noteId} created by user {userId}");
 
 **Never log:** passwords, refresh tokens, JWT tokens, API keys, personal sensitive data.
 
+**LoggingBehavior** (`Core.Application/Behaviors/LoggingBehavior.cs`) — MediatR pipeline behavior, outermost layer (registered before `ValidationBehavior`):
+- Logs every command/query with parameters (`{@Request}`) at `Information` level on start
+- Logs execution time + `{ErrorCode}` at `Warning` on `Result.IsFailure`
+- Logs execution time at `Information` on success
+- Does NOT catch exceptions — unhandled exceptions propagate to `GlobalExceptionHandlingMiddleware`
+
+**SensitiveDataDestructuringPolicy** (`Core.Infrastructure/Logging/SensitiveDataDestructuringPolicy.cs`) — Serilog destructuring policy, registered globally in `SerilogConfiguration`. Replaces values of properties named `Password`, `Token`, `RefreshToken`, `Secret`, `SecretKey`, `Key`, `Hash`, `PasswordHash` with `[REDACTED]` in all log events.
+
+**Seq** — planned sink. Adding it = `Serilog.Sinks.Seq` package + `.WriteTo.Seq(url)` in `SerilogConfiguration`. No structural changes needed — current setup is already Seq-compatible.
+
 ---
 
 ## Dependency Injection Rules
@@ -723,6 +737,7 @@ All projects via `Directory.Build.props`: `net10.0`, nullable enable, implicit u
 | FluentValidation + DI Extensions | Core.Application, Identity.Application |
 | EF Core (SqlServer) | Core.Infrastructure |
 | Serilog (+Extensions.Hosting, +Sinks.Console) | Core.Infrastructure |
+| SqlKata.Execution | Core.Application (QueryFactory DI + GetPagingListAsync extension) |
 | FrameworkReference: Microsoft.AspNetCore.App | Core.Infrastructure (IHttpContextAccessor) |
 | Microsoft.AspNetCore.Authentication.JwtBearer | Identity.Infrastructure |
 | BCrypt.Net-Next | Identity.Infrastructure |
@@ -779,5 +794,6 @@ Rules:
 - `copilot-instructions.md` shows solution path as `src/MyOS.Api`, but the actual project is `MyOS.API/` at repo root (no `src/` folder in use)
 - `copilot-instructions.md` mentions `MyOS.Modules.*` naming — current Identity module uses `MyOS.Identity.*` (without `Modules` segment). Future modules should follow `MyOS.Modules.{Name}.*`
 - System migration `20260426_CreateSqlFileHistoryTable.cs` uses `[Migration(2026042601)]` format (no time component) — standardize on full `YYYYMMDDHHNN` format for all new migrations
-- OpenTelemetry, health checks, SQLKata — **planned, not implemented**
+- OpenTelemetry, health checks — **planned, not implemented**
+- SQLKata — **implemented** (`SqlKata.Execution` in `Core.Application`, `QueryFactory` scoped in `AddCore()`, `GetPagingListAsync<T>` extension in `Core.Application/SqlKata/`)
 - `MyOS.Tests` — **implemented** (translation completeness + error code convention tests)
