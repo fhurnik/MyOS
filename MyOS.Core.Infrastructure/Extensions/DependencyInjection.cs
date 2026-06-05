@@ -1,3 +1,4 @@
+using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -17,6 +18,10 @@ namespace MyOS.Core.Infrastructure.Extensions
     {
         public static IServiceCollection AddCore(this IServiceCollection services, IConfiguration configuration)
         {
+            // Process-wide Dapper config: maps snake_case DB columns to PascalCase C# properties.
+            // Must be set once before any Dapper query. All DB columns in this project use snake_case.
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+
             services.AddCoreApplication();
 
             services.AddDbContext<AppDbContext>(options =>

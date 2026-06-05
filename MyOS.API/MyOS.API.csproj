@@ -13,6 +13,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\MyOS.Core.Infrastructure\MyOS.Core.Infrastructure.csproj" />
 		<ProjectReference Include="..\MyOS.Identity.Infrastructure\MyOS.Identity.Infrastructure.csproj" />
+		<ProjectReference Include="..\MyOS.Modules.Notes.Infrastructure\MyOS.Modules.Notes.Infrastructure.csproj" />
 	</ItemGroup>
 
 </Project>

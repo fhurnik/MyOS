@@ -1,9 +1,12 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.OpenApi.Models;
 using MyOS.API.Middlewares;
 using MyOS.Core.Infrastructure.Extensions;
 using MyOS.Core.Infrastructure.Logging;
 using MyOS.Identity.Infrastructure;
+using MyOS.Modules.Notes.Infrastructure;
 using Serilog;
 
 DotNetEnv.Env.Load();
@@ -17,6 +20,7 @@ builder.Host.UseSerilog((_, loggerConfiguration) =>
 
 builder.Services.AddCore(builder.Configuration);
 builder.Services.AddIdentityModule(builder.Configuration);
+builder.Services.AddNotesModule(builder.Configuration);
 
 builder.Services.AddApiVersioning(options =>
 {
@@ -36,13 +40,28 @@ builder.Services.AddApiVersioning(options =>
 
 builder.Services.AddControllers();
 
+var swaggerModules = typeof(Program).Assembly.GetTypes()
+    .Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(ControllerBase)))
+    .Select(t => t.Namespace?.Split('.').LastOrDefault())
+    .Where(m => !string.IsNullOrEmpty(m) && m != "Controllers")
+    .Distinct()
+    .OrderBy(m => m)
+    .ToList();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
+    foreach (var module in swaggerModules)
+        options.SwaggerDoc(module!.ToLower(), new OpenApiInfo { Title = $"MyOS {module}", Version = "v1" });
+
+    options.DocInclusionPredicate((docName, api) =>
     {
-        Title = "MyOS API",
-        Version = "v1"
+        if (api.ActionDescriptor is ControllerActionDescriptor descriptor)
+        {
+            var module = descriptor.ControllerTypeInfo.Namespace?.Split('.').LastOrDefault() ?? string.Empty;
+            return docName.Equals(module.ToLower(), StringComparison.Ordinal);
+        }
+        return false;
     });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -83,7 +102,8 @@ logger.LogInformation(
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "MyOS API v1");
+    foreach (var module in swaggerModules)
+        options.SwaggerEndpoint($"/swagger/{module!.ToLower()}/swagger.json", $"MyOS {module}");
     options.RoutePrefix = "swagger";
 });
 

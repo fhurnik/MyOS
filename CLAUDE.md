@@ -44,6 +44,7 @@ Architecture follows **pragmatic DDD**, **CQRS**, and **Clean Architecture** wit
 - Add a custom JWT validation middleware — use `JwtBearerEvents` for auth failure format
 - Add soft delete (`DeletedAtUtc`) to an entity unless that entity's lifecycle specifically requires it
 - Create error code classes as `static class` — must be `sealed class : ErrorCodes` for test discovery
+- Pass Command or Query types directly as `[FromBody]` or `[FromQuery]` in controllers — always use a separate Request record in `Controllers/{Module}/Requests/`
 
 ---
 
@@ -170,7 +171,11 @@ public interface IQueryHandler<Query, TResponse> : IRequestHandler<Query, Result
 
 ## Command File Convention (Slice)
 
-Each feature = one folder with one `*Command.cs` file (containing all three classes) and optionally a sibling DTO file.
+**Order within the file:** Command → Validator → Handler (matches the flow of a request).
+
+### Legacy modules (`MyOS.Identity.*`) — per-command subfolders
+
+Each command/query gets its own subfolder with one file.
 
 ```
 Commands/
@@ -179,18 +184,55 @@ Commands/
 ├── Login/
 │   ├── LoginCommand.cs           ← LoginCommand + LoginCommandValidator + LoginCommandHandler
 │   └── (reuses Shared/AuthTokens.cs)
-├── RefreshToken/
-│   └── RefreshTokenCommand.cs    ← RefreshTokenCommand + RefreshTokenCommandValidator + RefreshTokenCommandHandler
 └── Shared/
     └── AuthTokens.cs             ← shared response DTO
 ```
 
-**Order within the file:** Command → Validator → Handler (matches the flow of a request).
+### New modules (`MyOS.Modules.*`) — slice-per-entity
+
+The entity-slice pattern is the single organizing principle for all three layers of a module. One folder per entity — never one folder per command or query.
+
+| Layer | Folder structure |
+|---|---|
+| Application | `Notes/TextNotes/`, `Notes/CheckList/` — commands, queries, handlers, `Shared/` DTOs |
+| Domain | `Notes/TextNotes/`, `Notes/CheckList/` — entities, value objects, repository interfaces |
+| Infrastructure | `EntityConfigurations/TextNotes/`, `EntityConfigurations/CheckList/` — EF configs |
+
+```
+{Module}.Application/Notes/
+├── TextNotes/
+│   ├── CreateTextNoteCommand.cs   ← command + validator + handler
+│   ├── UpdateTextNoteCommand.cs
+│   ├── DeleteTextNoteCommand.cs
+│   ├── GetTextNoteQuery.cs        ← query + handler
+│   ├── GetTextNotesQuery.cs
+│   └── Shared/
+│       └── TextNoteDto.cs
+└── CheckList/
+    ├── CreateCheckListCommand.cs
+    ├── AddCheckListItemCommand.cs
+    ├── GetCheckListQuery.cs
+    ├── GetCheckListsQuery.cs
+    ├── ...
+    └── Shared/
+        ├── CheckListDto.cs
+        ├── CheckListItemDto.cs
+        └── CheckListSummaryDto.cs
+
+{Module}.Domain/Notes/
+├── TextNotes/
+│   ├── TextNote.cs
+│   └── ITextNoteRepository.cs
+└── CheckList/
+    ├── CheckList.cs
+    ├── CheckListItem.cs
+    └── ICheckListRepository.cs
+```
 
 **Response DTO naming:**
 - Command results: descriptive noun describing the data, not the action — e.g., `AuthTokens` (not `LoginResponse`)
-- When multiple commands return the same data, use a shared DTO in `Commands/Shared/`
-- Query results: `{Entity}Dto` suffix — e.g., `UserDto`, `NoteDto`
+- Query results: `{Entity}Dto` suffix — e.g., `TextNoteDto`, `CheckListDto`
+- Shared DTOs within a slice go in `Shared/` subfolder of that slice's folder
 
 ---
 
@@ -351,6 +393,15 @@ DELETE /api/v1/{resource}/{id}
 
 **Authorization:** `[Authorize]` added per-controller (not globally). Public endpoints (auth, health) use `[AllowAnonymous]`. `AuthController` has `[AllowAnonymous]` at the controller level.
 
+**Request records** — controllers never accept Command/Query types directly as `[FromBody]` or `[FromQuery]`. Always create a `sealed record` in `Controllers/{Module}/Requests/` containing only the fields the client provides (no route IDs, no `UserId` from `ICurrentUser`). The controller maps Request → Command/Query before sending.
+
+```
+Controllers/Notes/Requests/CreateTextNoteRequest.cs   ← sealed record(string Title, string Text)
+Controllers/Notes/Requests/GetTextNotesRequest.cs     ← sealed record : PagingRequest (+ future filter props)
+```
+
+For `[FromQuery]` list endpoints: inherit from `PagingRequest` (which is a `record`). Future filters are added as `init` properties on the Request record — no changes needed in the Query or handler. The Request is passed directly as `PagingRequest` via polymorphism.
+
 **Rules:**
 - Always use API versioning (`[ApiVersion("1.0")]` + route with `{version:apiVersion}`)
 - Always validate input (FluentValidation via MediatR pipeline)
@@ -405,7 +456,7 @@ FluentValidation via MediatR pipeline behavior (`ValidationBehavior<TRequest, TR
 **Entity rules:**
 - Constructors are `internal` — use static factory methods (`Create(...)`)
 - Properties have `private set`
-- Mutating methods are `internal`
+- Mutating methods are `internal` — add `<InternalsVisibleTo Include="MyOS.Modules.{Name}.Application" />` to Domain `.csproj` so Application handlers can call them cross-assembly without making them `public`
 - Private parameterless constructor for EF Core (initialize non-nullable strings with `null!`)
 - Timestamps: `CreatedAtUtc` (DateTime), `UpdatedAtUtc` (DateTime?) — add per entity as needed
 - Soft delete (`DeletedAtUtc`) is a global convention but must be added explicitly per entity — do not add it unless that entity's lifecycle requires it
@@ -451,6 +502,18 @@ public abstract class EntityConfiguration<TEntity> : IEntityTypeConfiguration<TE
 
 **Always map all columns explicitly** in entity configurations — do not rely on EF Core naming conventions. See `Identity.Infrastructure/EntityConfigurations/` for reference.
 
+**Query result DTOs mapped by Dapper must be property-based records** (not positional records). Positional records lack a parameterless constructor — Dapper cannot instantiate them. Use `init` properties instead:
+```csharp
+// Correct — Dapper can map this
+public sealed record TextNoteDto { public Guid Id { get; init; } public string Title { get; init; } = string.Empty; ... }
+
+// Wrong — no parameterless constructor, Dapper throws
+public sealed record TextNoteDto(Guid Id, string Title, ...);
+```
+`CheckListDto` (assembled manually in the handler, not by Dapper) may remain positional.
+
+**Repository `GetByIdAsync` must filter soft-deleted entities** — always include `&& e.DeletedAtUtc == null` in the predicate. Without it, mutating command handlers will operate on logically deleted records (update/delete after soft-delete silently resurrects the entity).
+
 **Infrastructure contains:** EF Core, SQLKata, repositories, external services, background services, logging config, Serilog.
 
 **Infrastructure must NOT contain** business logic.
@@ -488,11 +551,15 @@ Migrations use **FluentMigrator** — never EF Core migrations.
 MyOS.Migrator/
 ├── Migrations/
 │   ├── system/         ← system-level tables
-│   └── Identity/       ← identity module migrations
-│       └── (Notes/, Learning/, Finance/, Fitness/ — planned)
+│   ├── Identity/
+│   └── Notes/
 └── Views/
-    └── Identity/
-        └── v_users.sql
+    ├── Identity/
+    │   └── v_users.sql
+    └── Notes/
+        ├── v_text_notes.sql
+        ├── v_check_lists.sql
+        └── v_check_list_items.sql
 ```
 
 **Migration naming:**
@@ -544,6 +611,7 @@ FROM [identity].[users];
 **Rules:**
 - Views expose only required columns
 - Queries use views via SQLKata, not raw EF Core
+- Child entity views may JOIN the parent to expose `user_id` for ownership filtering in query handlers — e.g. `v_check_list_items` JOINs `check_lists` so that queries can filter `.Where("user_id", currentUser.Id)`
 
 ---
 
@@ -659,7 +727,13 @@ Currently implemented: Serilog structured logging, `traceId` and `correlationId`
 
 ## Pagination
 
-`PagingRequest` and `PagingList<T>` in `Core.Application/Abstractions/Pagination/`. Max `PageSize` = 100.
+`PagingRequest` (a `record`) and `PagingList<T>` in `Core.Application/Abstractions/Pagination/`. Max `PageSize` = 100.
+
+`PagingRequest` is a `record` so that controller-layer list Request records can inherit from it:
+```csharp
+public sealed record GetTextNotesRequest : PagingRequest;
+// future: { public string? TitleFilter { get; init; } }
+```
 
 ---
 
@@ -776,16 +850,17 @@ Rules:
 3. Add table migrations per entity
 4. Add SQL views in `Views/{Name}/v_{name}.sql`
 5. Implement domain entities extending `Entity`, repository interfaces in Domain
-6. Create `{Entity}Errors.cs` in `{Name}.Application/Errors/` — `sealed class : ErrorCodes`, private constructor, codes only (no messages), format `{ClassName}.{FieldName}`
-7. Create `{Name}Errors_en.resx` and `{Name}Errors_pl.resx` in `{Name}.Application/Resources/` with translations for every error code. Add `<EmbeddedResource Update="...">` in `.csproj` for each.
-8. Create `{Name}ErrorMessageProvider` in `{Name}.Application/Resources/` — builds `ResourceManager` from `typeof(Provider).Namespace` + language code map. Register as `services.AddSingleton<IErrorMessageProvider, {Name}ErrorMessageProvider>()` in `Add{Name}Application()`.
-9. Register `{Name}ErrorMessageProvider` assembly in `ErrorTestFixture.ModuleAssemblies` and `Providers` in `MyOS.Tests` so translation tests cover it automatically.
-10. Implement commands (slice: command + validator + handler in one file) and queries with handlers
-11. Add EF entity configurations extending `EntityConfiguration<T>` with full explicit column mapping
-12. Add `Add{Name}Application()` DI extension in Application (registers MediatR + validators + `IErrorMessageProvider` for this assembly)
-13. Expose `Add{Name}Module(IServiceCollection, IConfiguration)` from Infrastructure DI — registers EF configs, repos, application DI
-14. Register in `Program.cs` via `builder.Services.Add{Name}Module(builder.Configuration)`
-15. Add controllers in `MyOS.API/` extending `ApiControllerBase`, with `[ApiVersion("1.0")]` and `[Authorize]` where needed
+6. Add `<InternalsVisibleTo Include="MyOS.Modules.{Name}.Application" />` to Domain `.csproj` — enables Application handlers to call `internal` aggregate mutating methods cross-assembly
+7. Create `{Entity}Errors.cs` in `{Name}.Application/Errors/` — `sealed class : ErrorCodes`, private constructor, codes only (no messages), format `{ClassName}.{FieldName}`
+8. Create `{Name}Errors_en.resx` and `{Name}Errors_pl.resx` in `{Name}.Application/Resources/` with translations for every error code. Add `<EmbeddedResource Update="...">` in `.csproj` for each.
+9. Create `{Name}ErrorMessageProvider` in `{Name}.Application/Resources/` — builds `ResourceManager` from `typeof(Provider).Namespace` + language code map. Register as `services.AddSingleton<IErrorMessageProvider, {Name}ErrorMessageProvider>()` in `Add{Name}Application()`.
+10. Register `{Name}ErrorMessageProvider` assembly in `ErrorTestFixture.ModuleAssemblies` and `Providers` in `MyOS.Tests` so translation tests cover it automatically.
+11. Implement commands and queries using entity-slice structure — one folder per entity in Application, Domain, and Infrastructure (see Command File Convention)
+12. Add EF entity configurations extending `EntityConfiguration<T>` with full explicit column mapping
+13. Add `Add{Name}Application()` DI extension in Application (registers MediatR + validators + `IErrorMessageProvider` for this assembly)
+14. Expose `Add{Name}Module(IServiceCollection, IConfiguration)` from Infrastructure DI — registers EF configs, repos, application DI
+15. Register in `Program.cs` via `builder.Services.Add{Name}Module(builder.Configuration)`
+16. Add controllers in `MyOS.API/` extending `ApiControllerBase`, with `[ApiVersion("1.0")]` and `[Authorize]` where needed
 
 ---
 

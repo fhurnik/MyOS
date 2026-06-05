@@ -1,6 +1,7 @@
 using MyOS.Core.Application.Abstractions;
 using MyOS.Core.Application.Abstractions.Results;
 using MyOS.Identity.Application.Resources;
+using MyOS.Modules.Notes.Application.Resources;
 using System.Reflection;
 
 namespace MyOS.Tests.Translation
@@ -9,12 +10,14 @@ namespace MyOS.Tests.Translation
     {
         public static readonly Assembly[] ModuleAssemblies =
         [
-            typeof(IdentityErrorMessageProvider).Assembly
+            typeof(IdentityErrorMessageProvider).Assembly,
+            typeof(NotesErrorMessageProvider).Assembly
         ];
 
         public static readonly IErrorMessageProvider[] Providers =
         [
-            new IdentityErrorMessageProvider()
+            new IdentityErrorMessageProvider(),
+            new NotesErrorMessageProvider()
         ];
 
         public static IEnumerable<(Assembly Assembly, string ResourceName)> ResourceManifests =>

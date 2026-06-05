@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MyOS.API.Controllers.Identity.Requests;
 using MyOS.Identity.Application.Commands.ChangeLanguage;
 
 namespace MyOS.API.Controllers.Identity
@@ -11,10 +12,12 @@ namespace MyOS.API.Controllers.Identity
     {
         [HttpPatch("me/language")]
         public async Task<IActionResult> ChangeLanguage(
-            [FromBody] ChangeLanguageCommand command,
+            [FromBody] ChangeLanguageRequest request,
             CancellationToken cancellationToken)
         {
-            var result = await sender.Send(command, cancellationToken);
+            var result = await sender.Send(
+                new ChangeLanguageCommand(request.Language),
+                cancellationToken);
             return HandleResult(result);
         }
     }

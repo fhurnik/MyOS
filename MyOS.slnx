@@ -9,6 +9,11 @@
     <Project Path="MyOS.Identity.Domain/MyOS.Identity.Domain.csproj" />
     <Project Path="MyOS.Identity.Infrastructure/MyOS.Identity.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Notes/">
+    <Project Path="MyOS.Modules.Notes.Application/MyOS.Modules.Notes.Application.csproj" />
+    <Project Path="MyOS.Modules.Notes.Domain/MyOS.Modules.Notes.Domain.csproj" />
+    <Project Path="MyOS.Modules.Notes.Infrastructure/MyOS.Modules.Notes.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".env" />
     <File Path=".env.example" />

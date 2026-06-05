@@ -8,16 +8,25 @@ public static class QueryExtensions
 {
     public static async Task<PagingList<T>> GetPagingListAsync<T>(
         this Query query,
-        PagingRequest paging,
+        PagingRequest request,
         CancellationToken cancellationToken = default)
     {
         var totalCount = await query.Clone().CountAsync<int>(cancellationToken: cancellationToken);
 
-        var items = await query.Clone()
-            .Offset(paging.Skip)
-            .Limit(paging.Take)
+        var queryClone = query.Clone();
+        if (!string.IsNullOrEmpty(request.OrderBy))
+        {
+            if (request.OrderByDesc)
+                queryClone.OrderByDesc(request.OrderBy);
+            else
+                queryClone.OrderBy(request.OrderBy);
+        }
+
+        var items = await queryClone
+            .Offset(request.Skip)
+            .Limit(request.Take)
             .GetAsync<T>(cancellationToken: cancellationToken);
 
-        return new PagingList<T>(items.ToList(), paging.Page, paging.PageSize, totalCount);
+        return new PagingList<T>(items.ToList(), request.Page, request.PageSize, totalCount);
     }
 }
