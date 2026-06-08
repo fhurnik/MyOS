@@ -1,0 +1,86 @@
+{
+  "common": {
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "loading": "Ładowanie...",
+    "error": "Coś poszło nie tak",
+    "empty": "Brak danych",
+    "back": "Wróć",
+    "confirm": "Potwierdź"
+  },
+  "identity": {
+    "login": {
+      "title": "Zaloguj się do MyOS",
+      "email": "Email",
+      "password": "Hasło",
+      "submit": "Zaloguj się",
+      "noAccount": "Nie masz konta?",
+      "registerLink": "Zarejestruj się"
+    },
+    "register": {
+      "title": "Utwórz konto",
+      "firstName": "Imię",
+      "lastName": "Nazwisko",
+      "email": "Email",
+      "password": "Hasło",
+      "submit": "Utwórz konto",
+      "hasAccount": "Masz już konto?",
+      "loginLink": "Zaloguj się"
+    },
+    "language": {
+      "english": "Angielski",
+      "polish": "Polski",
+      "changeSuccess": "Język został zmieniony"
+    }
+  },
+  "notes": {
+    "textNotes": {
+      "title": "Notatki",
+      "empty": "Brak notatek. Stwórz pierwszą notatkę.",
+      "createButton": "Nowa notatka",
+      "editTitle": "Edytuj notatkę",
+      "newTitle": "Nowa notatka",
+      "titleLabel": "Tytuł",
+      "textLabel": "Treść",
+      "deleteConfirm": "Usunąć tę notatkę?"
+    },
+    "checkLists": {
+      "title": "Listy zadań",
+      "empty": "Brak list. Stwórz pierwszą listę.",
+      "createButton": "Nowa lista",
+      "titleLabel": "Tytuł",
+      "addItem": "Dodaj element",
+      "deleteConfirm": "Usunąć tę listę?",
+      "deleteItemConfirm": "Usunąć ten element?"
+    }
+  },
+  "navigation": {
+    "home": "Strona główna",
+    "notes": "Notatki",
+    "textNotes": "Notatki tekstowe",
+    "checkLists": "Listy zadań",
+    "settings": "Ustawienia",
+    "learning": "Nauka",
+    "finance": "Finanse",
+    "fitness": "Fitness",
+    "logout": "Wyloguj"
+  },
+  "home": {
+    "goodMorning": "Dzień dobry",
+    "goodAfternoon": "Dobry wieczór",
+    "goodEvening": "Dobry wieczór",
+    "modules": "Moduły",
+    "recentNotes": "Ostatnie notatki",
+    "viewAll": "Pokaż wszystkie",
+    "comingSoon": "Wkrótce",
+    "notesCount": "{count, plural, =0 {Brak notatek} one {# notatka} few {# notatki} other {# notatek}}",
+    "checkListsCount": "{count, plural, =0 {Brak list} one {# lista} few {# listy} other {# list}}"
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "language": "Język",
+    "account": "Konto"
+  }
+}

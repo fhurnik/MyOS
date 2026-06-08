@@ -1,0 +1,86 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "empty": "Nothing here yet",
+    "back": "Back",
+    "confirm": "Confirm"
+  },
+  "identity": {
+    "login": {
+      "title": "Sign in to MyOS",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Register"
+    },
+    "register": {
+      "title": "Create your account",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Create account",
+      "hasAccount": "Already have an account?",
+      "loginLink": "Sign in"
+    },
+    "language": {
+      "english": "English",
+      "polish": "Polish",
+      "changeSuccess": "Language updated"
+    }
+  },
+  "notes": {
+    "textNotes": {
+      "title": "Notes",
+      "empty": "No notes yet. Create your first note.",
+      "createButton": "New note",
+      "editTitle": "Edit note",
+      "newTitle": "New note",
+      "titleLabel": "Title",
+      "textLabel": "Content",
+      "deleteConfirm": "Delete this note?"
+    },
+    "checkLists": {
+      "title": "Check Lists",
+      "empty": "No check lists yet. Create your first list.",
+      "createButton": "New list",
+      "titleLabel": "Title",
+      "addItem": "Add item",
+      "deleteConfirm": "Delete this check list?",
+      "deleteItemConfirm": "Remove this item?"
+    }
+  },
+  "navigation": {
+    "home": "Home",
+    "notes": "Notes",
+    "textNotes": "Text Notes",
+    "checkLists": "Check Lists",
+    "settings": "Settings",
+    "learning": "Learning",
+    "finance": "Finance",
+    "fitness": "Fitness",
+    "logout": "Sign out"
+  },
+  "home": {
+    "goodMorning": "Good morning",
+    "goodAfternoon": "Good afternoon",
+    "goodEvening": "Good evening",
+    "modules": "Modules",
+    "recentNotes": "Recent notes",
+    "viewAll": "View all",
+    "comingSoon": "Coming soon",
+    "notesCount": "{count, plural, =0 {No notes} one {# note} other {# notes}}",
+    "checkListsCount": "{count, plural, =0 {No lists} one {# list} other {# lists}}"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "account": "Account"
+  }
+}
