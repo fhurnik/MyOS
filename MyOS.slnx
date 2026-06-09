@@ -17,7 +17,6 @@
   <Folder Name="/Solution Items/">
     <File Path=".env" />
     <File Path=".env.example" />
-    <File Path="Directory.Build.props" />
     <File Path="docker-compose.yml" />
   </Folder>
   <Folder Name="/Solution Items/docker/" />
