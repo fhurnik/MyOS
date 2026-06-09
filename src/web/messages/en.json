@@ -8,7 +8,14 @@
     "error": "Something went wrong",
     "empty": "Nothing here yet",
     "back": "Back",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "pageOf": "Page {page} of {total}",
+    "sortColumns": {
+      "title": "Title",
+      "createdAt": "Creation date"
+    }
   },
   "identity": {
     "login": {
@@ -44,7 +51,11 @@
       "newTitle": "New note",
       "titleLabel": "Title",
       "textLabel": "Content",
-      "deleteConfirm": "Delete this note?"
+      "deleteConfirm": "Delete this note?",
+      "validation": {
+        "titleRequired": "Title is required",
+        "contentRequired": "Content is required"
+      }
     },
     "checkLists": {
       "title": "Check Lists",
@@ -53,7 +64,11 @@
       "titleLabel": "Title",
       "addItem": "Add item",
       "deleteConfirm": "Delete this check list?",
-      "deleteItemConfirm": "Remove this item?"
+      "deleteItemConfirm": "Remove this item?",
+      "validation": {
+        "titleRequired": "Title is required",
+        "itemTextRequired": "Item text is required"
+      }
     }
   },
   "navigation": {

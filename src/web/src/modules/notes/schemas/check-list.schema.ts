@@ -1,12 +1,24 @@
 import { z } from "zod"
 
-export const checkListSchema = z.object({
-  title: z.string().min(1, "Title required").max(500),
-})
+export type CheckListFormValues = { title: string }
+export type CheckListItemFormValues = { text: string }
 
-export const checkListItemSchema = z.object({
-  text: z.string().min(1, "Item text required"),
-})
+export interface CheckListSchemaErrors {
+  titleRequired: string
+}
 
-export type CheckListFormValues = z.infer<typeof checkListSchema>
-export type CheckListItemFormValues = z.infer<typeof checkListItemSchema>
+export interface CheckListItemSchemaErrors {
+  itemTextRequired: string
+}
+
+export function createCheckListSchema(errors: CheckListSchemaErrors) {
+  return z.object({
+    title: z.string().min(1, errors.titleRequired).max(500),
+  })
+}
+
+export function createCheckListItemSchema(errors: CheckListItemSchemaErrors) {
+  return z.object({
+    text: z.string().min(1, errors.itemTextRequired),
+  })
+}

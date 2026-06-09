@@ -16,10 +16,11 @@ namespace MyOS.Modules.Notes.Application.Notes.CheckList
     {
         public async Task<Result<PagingList<CheckListSummaryDto>>> Handle(GetCheckListsQuery query, CancellationToken cancellationToken)
         {
-            var result = await db.Query("notes.v_check_lists")
-                .Where("user_id", currentUser.Id)
-                .OrderByDesc("created_at_utc")
-                .GetPagingListAsync<CheckListSummaryDto>(query.Paging, cancellationToken);
+            var baseQuery = db.Query("notes.v_check_lists").Where("user_id", currentUser.Id);
+            if (string.IsNullOrEmpty(query.Paging.OrderBy))
+                baseQuery.OrderByDesc("created_at_utc");
+
+            var result = await baseQuery.GetPagingListAsync<CheckListSummaryDto>(query.Paging, cancellationToken);
 
             return Result<PagingList<CheckListSummaryDto>>.Success(result);
         }

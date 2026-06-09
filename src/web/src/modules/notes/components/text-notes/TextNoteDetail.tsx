@@ -1,19 +1,20 @@
 "use client"
 
+import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { usePathname, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect } from "react"
-import { textNoteSchema, type TextNoteFormValues } from "@/modules/notes/schemas/text-note.schema"
+import { createTextNoteSchema, type TextNoteFormValues } from "@/modules/notes/schemas/text-note.schema"
 import { useTextNote } from "@/modules/notes/hooks/text-notes/useTextNote"
-import { useCreateTextNote } from "@/modules/notes/hooks/text-notes/useCreateTextNote"
 import { useUpdateTextNote } from "@/modules/notes/hooks/text-notes/useUpdateTextNote"
 import { useDeleteTextNote } from "@/modules/notes/hooks/text-notes/useDeleteTextNote"
 import type { TextNoteDto } from "@/modules/notes/types/notes.types"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
+import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog"
 
 interface TextNoteDetailProps {
   id: string
@@ -26,12 +27,19 @@ export function TextNoteDetail({ id, initialData }: TextNoteDetailProps) {
   const pathname = usePathname()
   const router = useRouter()
   const locale = pathname.split("/")[1] ?? "en"
-  const isNew = id === "new"
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
-  const { data: note } = useTextNote(isNew ? "" : id, initialData)
-  const { mutate: create, isPending: creating } = useCreateTextNote()
+  const { data: note } = useTextNote(id, initialData)
   const { mutate: update, isPending: updating } = useUpdateTextNote(id)
   const { mutate: del, isPending: deleting } = useDeleteTextNote()
+
+  const schema = useMemo(
+    () => createTextNoteSchema({
+      titleRequired: t("validation.titleRequired"),
+      contentRequired: t("validation.contentRequired"),
+    }),
+    [t]
+  )
 
   const {
     register,
@@ -39,7 +47,7 @@ export function TextNoteDetail({ id, initialData }: TextNoteDetailProps) {
     reset,
     formState: { errors, isDirty },
   } = useForm<TextNoteFormValues>({
-    resolver: zodResolver(textNoteSchema),
+    resolver: zodResolver(schema),
     defaultValues: { title: note?.title ?? "", text: note?.text ?? "" },
   })
 
@@ -48,29 +56,20 @@ export function TextNoteDetail({ id, initialData }: TextNoteDetailProps) {
   }, [note, reset])
 
   function onSubmit(values: TextNoteFormValues) {
-    if (isNew) {
-      create(values, {
-        onSuccess: (newId) => router.replace(`/${locale}/notes/${newId}`),
-      })
-    } else {
-      update(values)
-    }
+    update(values)
   }
 
-  function handleDelete() {
-    if (!confirm(t("deleteConfirm"))) return
+  function handleConfirmDelete() {
     del(id, { onSuccess: () => router.replace(`/${locale}/notes`) })
   }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{isNew ? t("newTitle") : t("editTitle")}</h1>
-        {!isNew && (
-          <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
-            {tCommon("delete")}
-          </Button>
-        )}
+        <h1 className="text-xl font-semibold">{t("editTitle")}</h1>
+        <Button variant="destructive" size="sm" onClick={() => setConfirmOpen(true)} disabled={deleting}>
+          {tCommon("delete")}
+        </Button>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -93,8 +92,8 @@ export function TextNoteDetail({ id, initialData }: TextNoteDetailProps) {
         </div>
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={creating || updating || (!isDirty && !isNew)}>
-            {creating || updating ? "…" : tCommon("save")}
+          <Button type="submit" disabled={updating || !isDirty}>
+            {updating ? "…" : tCommon("save")}
           </Button>
           <Button
             type="button"
@@ -105,6 +104,14 @@ export function TextNoteDetail({ id, initialData }: TextNoteDetailProps) {
           </Button>
         </div>
       </form>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={t("deleteConfirm")}
+        onConfirm={handleConfirmDelete}
+        isPending={deleting}
+      />
     </div>
   )
 }

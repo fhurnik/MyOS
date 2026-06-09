@@ -20,6 +20,7 @@ export async function getCheckListsApi(
   if (params.page) query.set("page", String(params.page))
   if (params.pageSize) query.set("pageSize", String(params.pageSize))
   if (params.orderBy) query.set("orderBy", params.orderBy)
+  if (params.orderByDesc) query.set("orderByDesc", "true")
   const qs = query.toString()
   return apiClient<PagingList<CheckListSummaryDto>>(`${BASE}${qs ? `?${qs}` : ""}`, { token })
 }

@@ -1,8 +1,15 @@
 import { z } from "zod"
 
-export const textNoteSchema = z.object({
-  title: z.string().min(1, "Title required").max(500),
-  text: z.string().min(1, "Content required"),
-})
+export type TextNoteFormValues = { title: string; text: string }
 
-export type TextNoteFormValues = z.infer<typeof textNoteSchema>
+export interface TextNoteSchemaErrors {
+  titleRequired: string
+  contentRequired: string
+}
+
+export function createTextNoteSchema(errors: TextNoteSchemaErrors) {
+  return z.object({
+    title: z.string().min(1, errors.titleRequired).max(500),
+    text: z.string().min(1, errors.contentRequired),
+  })
+}

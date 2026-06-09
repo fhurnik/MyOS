@@ -20,6 +20,7 @@
 | @hookform/resolvers | 5.x | Compatible with Zod 4 |
 | next-intl | 4.13 | URL-based locale routing |
 | jose | 6.x | JWT decode only — tokens live in httpOnly cookies |
+| sonner | latest | Toast notifications — global mutation errors via `MutationCache` |
 
 ---
 
@@ -39,6 +40,9 @@
 - Use `router.push` after login/logout — use `router.replace` so back navigation doesn't return to the auth page
 - Hardcode locale strings (`"en"`, `"pl"`) outside the `language.ts` map — derive from `Language` enum using `LANGUAGE_TO_LOCALE`
 - Add shadcn components via `npx shadcn add` without verifying the component lands in `src/shared/components/ui/`
+- Add per-mutation `onError` handlers for generic backend error display — `MutationCache.onError` in `query-client.ts` already shows a `toast.error` for every failed mutation; add `onError` only when mutation-specific logic is needed
+- Write Zod schemas with hardcoded error strings — schemas that power forms use factory functions accepting a plain error object (`{ titleRequired: string, ... }`); the component calls `t()` and passes the translated strings to the factory
+- Wrap `BreadcrumbLink` (or use `AppBreadcrumbs`) in a Server Component — `BreadcrumbLink` uses `useRender` from `@base-ui/react` and requires `"use client"`
 
 ---
 
@@ -118,11 +122,15 @@ src/web/
         │   ├── api.types.ts    ← PagingList<T>, ProblemDetails, PagingRequest
         │   └── common.types.ts ← Language, SUPPORTED_LOCALES, DEFAULT_LOCALE
         ├── components/
-        │   ├── ui/             ← shadcn copies: button, input, label, card, alert, separator
+        │   ├── ui/             ← shadcn copies: button, input, label, card, alert, separator, dialog, breadcrumb, sonner
+        │   │   ├── confirm-dialog.tsx  ← reusable delete confirmation modal (wraps Dialog)
+        │   │   └── paginated-list.tsx  ← generic PaginatedList<T>; list mode (renderItem) or table mode (columns); sort, row click, row actions
         │   └── layout/
-        │       └── Sidebar.tsx ← only file to change when adding a new module nav link
+        │       ├── Sidebar.tsx         ← only file to change when adding a new module nav link
+        │       └── AppBreadcrumbs.tsx  ← "use client" breadcrumb wrapper; accepts BreadcrumbEntry[]
         ├── hooks/
-        │   └── useSession.ts
+        │   ├── useSession.ts
+        │   └── usePaginatedNavigation.ts  ← page/pageSize/orderBy/orderByDesc state + URL sync + auto-scroll; generic TColumn; use with PaginatedList
         └── providers/
             ├── QueryProvider.tsx
             └── SessionProvider.tsx
@@ -261,6 +269,102 @@ export const textNoteKeys = {
 npx shadcn add <component>
 ```
 components.json aliases ensure correct placement.
+
+---
+
+## Shared UI Patterns
+
+### Backend error toasts
+`MutationCache.onError` in `src/shared/lib/query-client.ts` catches every failed mutation and calls `toast.error(error.detail)`. The `<Toaster />` from `@/shared/components/ui/sonner` is mounted in `src/app/layout.tsx`. No additional setup needed — backend errors surface automatically.
+
+### Paginated lists
+Use `usePaginatedNavigation` + `PaginatedList<T>` for every list page. The hook is generic over sort column names (`TColumn extends string`):
+
+```typescript
+const { page, pageSize, orderBy, orderByDesc, goToPage, handlePageSizeChange, handleSortChange, listRef } =
+  usePaginatedNavigation<"title" | "createdAtUtc">({
+    initialPage, initialPageSize,
+    initialOrderBy,      // optional — from SSR searchParams
+    initialOrderByDesc,  // optional — from SSR searchParams
+  })
+```
+
+URL syncs automatically: `?page=1&pageSize=10&orderBy=title&orderByDesc=true`.
+
+**List mode** (`renderItem`) — flat list with optional sort bar above:
+```tsx
+<PaginatedList
+  data={data} isLoading={isLoading}
+  page={page} pageSize={pageSize}
+  onGoToPage={goToPage} onPageSizeChange={handlePageSizeChange}
+  listRef={listRef}
+  renderItem={(note) => <NoteCard note={note} />}
+  keyExtractor={(note) => note.id}
+  emptyState={<p>{t("empty")}</p>}
+  sortColumns={[{ key: "title", label: t("title") }]}  // optional sort bar
+  orderBy={orderBy} orderByDesc={orderByDesc} onSortChange={handleSortChange}
+/>
+```
+
+**Table mode** (`columns`) — renders `<table>` with sortable headers, row click, and optional actions column:
+```tsx
+<PaginatedList
+  data={data} isLoading={isLoading}
+  page={page} pageSize={pageSize}
+  onGoToPage={goToPage} onPageSizeChange={handlePageSizeChange}
+  listRef={listRef}
+  keyExtractor={(note) => note.id}
+  emptyState={<p>{t("empty")}</p>}
+  orderBy={orderBy} orderByDesc={orderByDesc} onSortChange={handleSortChange}
+  onRowClick={(note) => router.push(`/${locale}/notes/${note.id}`)}
+  rowActions={(note) => (
+    <button onClick={() => setPendingDeleteId(note.id)}><Trash2 /></button>
+  )}
+  columns={[
+    { key: "title", label: tCommon("sortColumns.title"), sortable: true, render: (note) => note.title },
+    { key: "createdAtUtc", label: tCommon("sortColumns.createdAt"), sortable: true,
+      headerClassName: "text-right", cellClassName: "text-right text-muted-foreground",
+      render: (note) => formatDate(note.createdAtUtc) },
+  ]}
+/>
+```
+
+`rowActions` cell automatically stops click propagation — clicks there never trigger `onRowClick`.
+
+Sort column labels live in `common.sortColumns` (`title`, `createdAt`) — shared across all modules.
+
+**SSR sort support** — page Server Components read `orderBy`/`orderByDesc` from `searchParams`, validate against an allowed list, pass to the API call and as `initialOrderBy`/`initialOrderByDesc` props to the list component.
+
+`PaginatedList` always renders the pagination bar (page size selector 5/10/25/100, prev/next, "Page X of Y").
+
+### Confirm dialogs
+Use `ConfirmDialog` from `@/shared/components/ui/confirm-dialog` for delete confirmations — never `window.confirm()`.
+
+### Breadcrumbs
+Use `AppBreadcrumbs` from `@/shared/components/layout/AppBreadcrumbs` in page Server Components. It requires `"use client"` internally (already applied). Pass `BreadcrumbEntry[]` where entries with `href` render as links, entries without render as current page.
+
+```typescript
+<AppBreadcrumbs items={[
+  { label: t("textNotes"), href: `/${locale}/notes` },
+  { label: note.title },
+]} />
+```
+
+### Zod schema factories (i18n)
+Form schemas that display validation messages must use factory functions — never hardcode English strings:
+
+```typescript
+// schemas/text-note.schema.ts
+export function createTextNoteSchema(errors: { titleRequired: string; contentRequired: string }) {
+  return z.object({ title: z.string().min(1, { error: errors.titleRequired }) })
+}
+
+// component
+const schema = useMemo(() => createTextNoteSchema({
+  titleRequired: t("validation.titleRequired"),
+  contentRequired: t("validation.contentRequired"),
+}), [t])
+```
 
 ---
 

@@ -13,6 +13,7 @@ import {
 import type { CheckListDto } from "@/modules/notes/types/notes.types"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
+import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog"
 import { CheckListItem } from "./CheckListItem"
 
 interface CheckListDetailProps {
@@ -27,22 +28,28 @@ export function CheckListDetail({ id, initialData }: CheckListDetailProps) {
   const router = useRouter()
   const locale = pathname.split("/")[1] ?? "en"
   const [newItemText, setNewItemText] = useState("")
+  const [deleteListOpen, setDeleteListOpen] = useState(false)
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null)
 
   const { data: list } = useCheckList(id, initialData)
   const { mutate: del, isPending: deleting } = useDeleteCheckList()
   const { mutate: addItem, isPending: addingItem } = useAddCheckListItem(id)
   const { mutate: toggle } = useToggleCheckListItem(id)
-  const { mutate: deleteItem } = useDeleteCheckListItem(id)
-
-  function handleDelete() {
-    if (!confirm(t("deleteConfirm"))) return
-    del(id, { onSuccess: () => router.replace(`/${locale}/notes/checklists`) })
-  }
+  const { mutate: deleteItem, isPending: deletingItem } = useDeleteCheckListItem(id)
 
   function handleAddItem(e: React.FormEvent) {
     e.preventDefault()
     if (!newItemText.trim()) return
     addItem({ text: newItemText.trim() }, { onSuccess: () => setNewItemText("") })
+  }
+
+  function handleConfirmDeleteList() {
+    del(id, { onSuccess: () => router.replace(`/${locale}/notes/checklists`) })
+  }
+
+  function handleConfirmDeleteItem() {
+    if (deleteItemId) deleteItem(deleteItemId)
+    setDeleteItemId(null)
   }
 
   if (!list) return null
@@ -53,7 +60,7 @@ export function CheckListDetail({ id, initialData }: CheckListDetailProps) {
     <div className="mx-auto max-w-lg space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{list.title}</h1>
-        <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
+        <Button variant="destructive" size="sm" onClick={() => setDeleteListOpen(true)} disabled={deleting}>
           {tCommon("delete")}
         </Button>
       </div>
@@ -64,9 +71,7 @@ export function CheckListDetail({ id, initialData }: CheckListDetailProps) {
             key={item.id}
             item={item}
             onToggle={() => toggle(item.id)}
-            onDelete={() => {
-              if (confirm(t("deleteItemConfirm"))) deleteItem(item.id)
-            }}
+            onDelete={() => setDeleteItemId(item.id)}
           />
         ))}
       </ul>
@@ -82,6 +87,22 @@ export function CheckListDetail({ id, initialData }: CheckListDetailProps) {
           +
         </Button>
       </form>
+
+      <ConfirmDialog
+        open={deleteListOpen}
+        onOpenChange={setDeleteListOpen}
+        title={t("deleteConfirm")}
+        onConfirm={handleConfirmDeleteList}
+        isPending={deleting}
+      />
+
+      <ConfirmDialog
+        open={deleteItemId !== null}
+        onOpenChange={(open) => { if (!open) setDeleteItemId(null) }}
+        title={t("deleteItemConfirm")}
+        onConfirm={handleConfirmDeleteItem}
+        isPending={deletingItem}
+      />
     </div>
   )
 }

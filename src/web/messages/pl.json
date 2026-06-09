@@ -8,7 +8,14 @@
     "error": "Coś poszło nie tak",
     "empty": "Brak danych",
     "back": "Wróć",
-    "confirm": "Potwierdź"
+    "confirm": "Potwierdź",
+    "previousPage": "Poprzednia",
+    "nextPage": "Następna",
+    "pageOf": "Strona {page} z {total}",
+    "sortColumns": {
+      "title": "Tytuł",
+      "createdAt": "Data utworzenia"
+    }
   },
   "identity": {
     "login": {
@@ -44,7 +51,11 @@
       "newTitle": "Nowa notatka",
       "titleLabel": "Tytuł",
       "textLabel": "Treść",
-      "deleteConfirm": "Usunąć tę notatkę?"
+      "deleteConfirm": "Usunąć tę notatkę?",
+      "validation": {
+        "titleRequired": "Tytuł jest wymagany",
+        "contentRequired": "Treść jest wymagana"
+      }
     },
     "checkLists": {
       "title": "Listy zadań",
@@ -53,7 +64,11 @@
       "titleLabel": "Tytuł",
       "addItem": "Dodaj element",
       "deleteConfirm": "Usunąć tę listę?",
-      "deleteItemConfirm": "Usunąć ten element?"
+      "deleteItemConfirm": "Usunąć ten element?",
+      "validation": {
+        "titleRequired": "Tytuł jest wymagany",
+        "itemTextRequired": "Tekst elementu jest wymagany"
+      }
     }
   },
   "navigation": {
