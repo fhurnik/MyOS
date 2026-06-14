@@ -12,13 +12,14 @@ using DomainRefreshToken = MyOS.Identity.Domain.Users.RefreshToken;
 
 namespace MyOS.Identity.Application.Commands.ChangeLanguage
 {
-    public sealed record ChangeLanguageCommand(Language Language) : ICommand<AuthTokens>;
+    public sealed record ChangeLanguageCommand(Language Language, string RefreshToken) : ICommand<AuthTokens>;
 
     public sealed class ChangeLanguageCommandValidator : AbstractValidator<ChangeLanguageCommand>
     {
         public ChangeLanguageCommandValidator()
         {
             RuleFor(x => x.Language).IsInEnum();
+            RuleFor(x => x.RefreshToken).NotEmpty();
         }
     }
 
@@ -35,11 +36,17 @@ namespace MyOS.Identity.Application.Commands.ChangeLanguage
             if (user is null || !user.IsActive)
                 return Result<AuthTokens>.Failure(UserErrors.AccountDisabled);
 
+            var existingToken = await userRepository.GetRefreshTokenAsync(command.RefreshToken, cancellationToken);
+            if (existingToken is null || !existingToken.IsActive || existingToken.UserId != user.Id)
+                return Result<AuthTokens>.Failure(UserErrors.InvalidRefreshToken);
+
             user.ChangeLanguage(command.Language);
 
             var accessToken = jwtTokenGenerator.GenerateAccessToken(user.Id, user.Email, command.Language);
             var rawRefreshToken = jwtTokenGenerator.GenerateRefreshToken();
-            var expiresAt = DateTimeOffset.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpiryDays);
+            var expiresAt = DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpiryDays);
+
+            existingToken.Revoke(replacedByToken: rawRefreshToken);
 
             var refreshToken = DomainRefreshToken.Create(user.Id, rawRefreshToken, expiresAt);
             await userRepository.AddRefreshTokenAsync(refreshToken, cancellationToken);

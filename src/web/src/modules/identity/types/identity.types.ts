@@ -19,6 +19,7 @@ export interface LoginBody {
 
 export interface ChangeLanguageBody {
   language: Language
+  refreshToken: string
 }
 
 export interface SessionPayload {

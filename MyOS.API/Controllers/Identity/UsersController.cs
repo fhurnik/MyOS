@@ -16,7 +16,7 @@ namespace MyOS.API.Controllers.Identity
             CancellationToken cancellationToken)
         {
             var result = await sender.Send(
-                new ChangeLanguageCommand(request.Language),
+                new ChangeLanguageCommand(request.Language, request.RefreshToken),
                 cancellationToken);
             return HandleResult(result);
         }
