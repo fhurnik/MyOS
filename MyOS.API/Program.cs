@@ -108,12 +108,13 @@ app.UseSwaggerUI(options =>
 });
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
-app.UseMiddleware<LanguageCultureMiddleware>();
 
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<LanguageCultureMiddleware>();
 
 app.MapControllers();
 

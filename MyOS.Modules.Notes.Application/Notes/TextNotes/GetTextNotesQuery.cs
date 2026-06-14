@@ -16,10 +16,13 @@ namespace MyOS.Modules.Notes.Application.Notes.TextNotes
     {
         public async Task<Result<PagingList<TextNoteDto>>> Handle(GetTextNotesQuery query, CancellationToken cancellationToken)
         {
-            var result = await db.Query("notes.v_text_notes")
-                .Where("user_id", currentUser.Id)
-                //.OrderBy("title")
-                .GetPagingListAsync<TextNoteDto>(query.Paging, cancellationToken);
+            var baseQuery = db.Query("notes.v_text_notes")
+                .Where("user_id", currentUser.Id);
+            
+            if (string.IsNullOrEmpty(query.Paging.OrderBy))
+                baseQuery.OrderBy("title");
+
+            var result = await baseQuery.GetPagingListAsync<TextNoteDto>(query.Paging, cancellationToken);
 
             return Result<PagingList<TextNoteDto>>.Success(result);
         }
