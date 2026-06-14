@@ -32,6 +32,7 @@ namespace MyOS.Identity.Infrastructure
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+            services.AddScoped<IAuthTokenIssuer, AuthTokenIssuer>();
 
             var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
             services

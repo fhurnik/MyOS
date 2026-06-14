@@ -1,5 +1,4 @@
 using FluentValidation;
-using Microsoft.Extensions.Options;
 using MyOS.Core.Application.Abstractions;
 using MyOS.Core.Application.Abstractions.Messaging;
 using MyOS.Core.Application.Abstractions.Results;
@@ -7,7 +6,6 @@ using MyOS.Identity.Application.Abstractions;
 using MyOS.Identity.Application.Commands.Shared;
 using MyOS.Identity.Application.Errors;
 using MyOS.Identity.Domain.Users;
-using DomainRefreshToken = MyOS.Identity.Domain.Users.RefreshToken;
 
 namespace MyOS.Identity.Application.Commands.Login
 {
@@ -25,9 +23,8 @@ namespace MyOS.Identity.Application.Commands.Login
     internal sealed class LoginCommandHandler(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
-        IJwtTokenGenerator jwtTokenGenerator,
-        IUnitOfWork unitOfWork,
-        IOptions<JwtSettings> jwtSettings) : ICommandHandler<LoginCommand, AuthTokens>
+        IAuthTokenIssuer authTokenIssuer,
+        IUnitOfWork unitOfWork) : ICommandHandler<LoginCommand, AuthTokens>
     {
         public async Task<Result<AuthTokens>> Handle(LoginCommand command, CancellationToken cancellationToken)
         {
@@ -38,15 +35,10 @@ namespace MyOS.Identity.Application.Commands.Login
             if (!user.IsActive)
                 return Result<AuthTokens>.Failure(UserErrors.AccountDisabled);
 
-            var accessToken = jwtTokenGenerator.GenerateAccessToken(user.Id, user.Email, user.Language);
-            var rawRefreshToken = jwtTokenGenerator.GenerateRefreshToken();
-            var expiresAt = DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpiryDays);
-
-            var refreshToken = DomainRefreshToken.Create(user.Id, rawRefreshToken, expiresAt);
-            await userRepository.AddRefreshTokenAsync(refreshToken, cancellationToken);
+            var tokens = await authTokenIssuer.IssueAsync(user, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return Result<AuthTokens>.Success(new AuthTokens(accessToken, rawRefreshToken));
+            return Result<AuthTokens>.Success(tokens);
         }
     }
 }

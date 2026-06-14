@@ -20,7 +20,9 @@ namespace MyOS.Core.Infrastructure.Services
                     throw new InvalidOperationException("Cannot access user Id for an unauthenticated request.");
 
                 var value = User!.FindFirstValue(JwtRegisteredClaimNames.Sub);
-                return Guid.Parse(value!);
+                return Guid.TryParse(value, out var id)
+                    ? id
+                    : throw new InvalidOperationException("User Id claim is missing or invalid.");
             }
         }
 

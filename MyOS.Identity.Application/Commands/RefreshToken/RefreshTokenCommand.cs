@@ -1,5 +1,4 @@
 using FluentValidation;
-using Microsoft.Extensions.Options;
 using MyOS.Core.Application.Abstractions;
 using MyOS.Core.Application.Abstractions.Messaging;
 using MyOS.Core.Application.Abstractions.Results;
@@ -7,7 +6,6 @@ using MyOS.Identity.Application.Abstractions;
 using MyOS.Identity.Application.Commands.Shared;
 using MyOS.Identity.Application.Errors;
 using MyOS.Identity.Domain.Users;
-using DomainRefreshToken = MyOS.Identity.Domain.Users.RefreshToken;
 
 namespace MyOS.Identity.Application.Commands.RefreshToken
 {
@@ -23,9 +21,8 @@ namespace MyOS.Identity.Application.Commands.RefreshToken
 
     internal sealed class RefreshTokenCommandHandler(
         IUserRepository userRepository,
-        IJwtTokenGenerator jwtTokenGenerator,
-        IUnitOfWork unitOfWork,
-        IOptions<JwtSettings> jwtSettings) : ICommandHandler<RefreshTokenCommand, AuthTokens>
+        IAuthTokenIssuer authTokenIssuer,
+        IUnitOfWork unitOfWork) : ICommandHandler<RefreshTokenCommand, AuthTokens>
     {
         public async Task<Result<AuthTokens>> Handle(RefreshTokenCommand command, CancellationToken cancellationToken)
         {
@@ -37,18 +34,12 @@ namespace MyOS.Identity.Application.Commands.RefreshToken
             if (user is null || !user.IsActive)
                 return Result<AuthTokens>.Failure(UserErrors.AccountDisabled);
 
-            var newRawToken = jwtTokenGenerator.GenerateRefreshToken();
-            var expiresAt = DateTime.UtcNow.AddDays(jwtSettings.Value.RefreshTokenExpiryDays);
+            var tokens = await authTokenIssuer.IssueAsync(user, cancellationToken);
+            existingToken.Revoke(replacedByToken: tokens.RefreshToken);
 
-            existingToken.Revoke(replacedByToken: newRawToken);
-
-            var newRefreshToken = DomainRefreshToken.Create(user.Id, newRawToken, expiresAt);
-            await userRepository.AddRefreshTokenAsync(newRefreshToken, cancellationToken);
-
-            var accessToken = jwtTokenGenerator.GenerateAccessToken(user.Id, user.Email, user.Language);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return Result<AuthTokens>.Success(new AuthTokens(accessToken, newRawToken));
+            return Result<AuthTokens>.Success(tokens);
         }
     }
 }
