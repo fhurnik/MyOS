@@ -3,8 +3,10 @@ using MyOS.Core.Application.Abstractions;
 using MyOS.Core.Application.Abstractions.BusinessRules;
 using MyOS.Core.Application.Abstractions.Messaging;
 using MyOS.Core.Application.Abstractions.Results;
+using MyOS.Core.Application.Exceptions;
 using MyOS.Identity.Application.Abstractions;
 using MyOS.Identity.Application.Commands.Register.BusinesRules;
+using MyOS.Identity.Application.Errors;
 using MyOS.Identity.Domain.Users;
 
 namespace MyOS.Identity.Application.Commands.Register
@@ -43,7 +45,18 @@ namespace MyOS.Identity.Application.Commands.Register
             var user = User.Create(command.FirstName, command.LastName, command.Email, passwordHash);
 
             await userRepository.AddAsync(user, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            try
+            {
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (UniqueConstraintViolationException)
+            {
+                return Result<Guid>.Failure(UserErrors.EmailAlreadyInUse with
+                {
+                    Parameters = new Dictionary<string, string> { ["email"] = command.Email }
+                });
+            }
 
             return Result<Guid>.Success(user.Id);
         }
