@@ -29,7 +29,7 @@ public static class QueryExtensions
             .Limit(request.Take)
             .GetAsync<T>(cancellationToken: cancellationToken);
 
-        return new PagingList<T>(items.ToList(), request.Page, request.PageSize, totalCount);
+        return new PagingList<T>(items.ToList(), request.Page, request.Take, totalCount);
     }
 
     private static string ToSnakeCase(string value) =>

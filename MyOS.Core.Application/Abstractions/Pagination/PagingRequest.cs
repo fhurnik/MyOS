@@ -8,9 +8,7 @@
         public string? OrderBy { get; init; }
         public bool OrderByDesc { get; set; } = false;
 
-        internal int Skip => Math.Max(0, (Page - 1) * PageSize);
-        internal int Take => PageSize > MaxPageSize
-            ? MaxPageSize
-            : PageSize;
+        internal int Skip => Math.Max(0, (Page - 1) * Take);
+        internal int Take => Math.Clamp(PageSize, 1, MaxPageSize);
     }
 }
