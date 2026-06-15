@@ -159,8 +159,9 @@ public interface IQueryHandler<Query, TResponse> : IRequestHandler<Query, Result
 - All command handlers inject `IUnitOfWork` and call it at the end.
 
 **SQLKata helpers** (`Core.Application/SqlKata/QueryExtensions.cs`):
-- `query.GetPagingListAsync<T>(PagingRequest, CancellationToken)` — executes COUNT + paged SELECT, returns `PagingList<T>`
-- Inject `QueryFactory db`, build query with `db.Query(...)`, chain conditions, call extension at the end
+- `query.GetPagingListAsync<T>(PagingRequest, CancellationToken)` — executes COUNT + paged SELECT, returns `Result<PagingList<T>>`
+- `PagingRequest.OrderBy` is validated against `T`'s public property names (case-insensitive only in the first character — e.g. `createdAtUtc` matches `CreatedAtUtc`, but `createdatutc` does not) before being converted to snake_case and passed to SQLKata. An unmatched column returns `Result.Failure(PagingErrors.InvalidOrderBy)` (→ 400) instead of letting SQL Server reject an invalid column name (→ 500)
+- Inject `QueryFactory db`, build query with `db.Query(...)`, chain conditions, call extension at the end — query handlers can `return await ... .GetPagingListAsync<TDto>(...)` directly since it already returns `Result<PagingList<TDto>>`
 
 **MediatR** is the mediator. Registered per-module via `AddIdentityApplication()` pattern.
 
@@ -259,6 +260,8 @@ public sealed class UserErrors : ErrorCodes
 
 **Location:** `{Module}.Application/Errors/{Entity}Errors.cs`
 — in **Application** layer (not Domain), because `Error` type is from `Core.Application`.
+
+**Exception — cross-cutting codes in Core:** error codes that don't belong to any business module (e.g. `PagingErrors`) live in `Core.Application/Errors/` and follow the exact same pattern: `.resx` files in `Core.Application/Resources/`, a `CoreErrorMessageProvider`, registered via `AddSingleton<IErrorMessageProvider, CoreErrorMessageProvider>()` in `AddCoreApplication()` (not per-module).
 
 **In handlers:**
 ```csharp

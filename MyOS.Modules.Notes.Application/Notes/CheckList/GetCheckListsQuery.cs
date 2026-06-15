@@ -20,9 +20,7 @@ namespace MyOS.Modules.Notes.Application.Notes.CheckList
             if (string.IsNullOrEmpty(query.Paging.OrderBy))
                 baseQuery.OrderByDesc("created_at_utc");
 
-            var result = await baseQuery.GetPagingListAsync<CheckListSummaryDto>(query.Paging, cancellationToken);
-
-            return Result<PagingList<CheckListSummaryDto>>.Success(result);
+            return await baseQuery.GetPagingListAsync<CheckListSummaryDto>(query.Paging, cancellationToken);
         }
     }
 }

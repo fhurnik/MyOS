@@ -22,9 +22,7 @@ namespace MyOS.Modules.Notes.Application.Notes.TextNotes
             if (string.IsNullOrEmpty(query.Paging.OrderBy))
                 baseQuery.OrderBy("title");
 
-            var result = await baseQuery.GetPagingListAsync<TextNoteDto>(query.Paging, cancellationToken);
-
-            return Result<PagingList<TextNoteDto>>.Success(result);
+            return await baseQuery.GetPagingListAsync<TextNoteDto>(query.Paging, cancellationToken);
         }
     }
 }
