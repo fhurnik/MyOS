@@ -1,7 +1,6 @@
 # CLAUDE.md — MyOS Project Context
 
 > Single source of truth for AI assistants (Claude, Copilot, Cursor, ChatGPT, etc.).
-> Last verified and updated: 2026-06-04 (session: trim + restructure — removed redundant code blocks, moved "Things AI Must Never Do" to top).
 
 ---
 
@@ -56,6 +55,7 @@ MyOS/                                      ← repo root
 ├── MyOS.slnx
 ├── Directory.Build.props                  ← global: net10.0, nullable, implicit usings
 ├── docker-compose.yml
+├── docker/                                ← SQL Server init scripts
 ├── .env / .env.example
 ├── init.sql / init-db.sh
 │
@@ -68,17 +68,14 @@ MyOS/                                      ← repo root
 │
 ├── MyOS.Tests/                            ← Unit tests (translation completeness, error code conventions)
 │
-├── MyOS.Identity.Domain/
-├── MyOS.Identity.Application/
-├── MyOS.Identity.Infrastructure/
+├── MyOS.Identity.{Layer}/                 ← legacy module (Domain / Application / Infrastructure)
 │
-└── src/                                   ← (reserved, currently empty/frontend)
+├── MyOS.Modules.{ModuleName}.{Layer}/     ← one Domain / Application / Infrastructure triplet per business module (e.g. Notes)
+│
+└── src/web/                               ← Next.js frontend
 ```
 
-**Modules planned but not yet implemented:** Notes, Learning, Finance, Fitness.
-Each will follow the pattern: `MyOS.Modules.{Name}.Domain / Application / Infrastructure`.
-
-> **Naming rule:** Use `MyOS.Modules.{ModuleName}.{Layer}` for future modules.
+> **Naming rule:** New modules follow `MyOS.Modules.{ModuleName}.{Layer}` (e.g. `MyOS.Modules.Notes.*`). The Identity module predates this convention and uses `MyOS.Identity.*` (without `Modules`) — do not rename it, but all new modules must use the `Modules.` form.
 > Never use: `Shared`, `Common`, `Helpers`. Use `Core` for cross-cutting concerns.
 
 ---
@@ -609,10 +606,10 @@ public sealed record TextNoteDto(Guid Id, string Title, ...);
 | Module | Schema |
 |---|---|
 | Identity | `identity` |
-| Notes | `notes` (planned) |
-| Learning | `learning` (planned) |
-| Finance | `finance` (planned) |
-| Fitness | `fitness` (planned) |
+| Notes | `notes` |
+| Learning | `learning` |
+| Finance | `finance` |
+| Fitness | `fitness` |
 | System | `system` |
 
 **Soft delete:** use `deleted_at_utc` column when a specific entity's lifecycle requires it. Not every entity needs soft delete by default — add it explicitly when needed.
@@ -635,8 +632,6 @@ MyOS.Migrator/
 │   ├── Identity/
 │   └── Notes/
 └── Views/
-    ├── Identity/
-    │   └── v_users.sql
     └── Notes/
         ├── v_text_notes.sql
         ├── v_check_lists.sql
@@ -658,6 +653,7 @@ Migration class attribute: `[Migration(YYYYMMDDHHNN)]` — globally unique numer
 - Never rename existing migration files
 - Never modify already-executed migrations
 - Create a new migration for any change
+- One legacy migration (`Migrations/system/20260426_CreateSqlFileHistoryTable.cs`) uses `[Migration(2026042601)]` (date-only, no time component) — do not copy this format; all new migrations use full `YYYYMMDDHHNN`
 
 **Migration class pattern:**
 ```csharp
@@ -679,14 +675,15 @@ SQL views serve as **read models** for the Query side of CQRS.
 
 **Synchronization:** `SqlViewSynchronizer` runs after migrations and applies `.sql` files from `Views/` directory. It uses SHA256 hashing tracked in `system.sql_file_history` — only changed files are re-applied.
 
-**View pattern:** `CREATE OR ALTER VIEW [{Schema}].[v_{name}]`
+**View pattern:** `CREATE OR ALTER VIEW [{schema}].[v_{name}]`
 
 ```sql
--- Views/Identity/v_users.sql
-CREATE OR ALTER VIEW [Identity].[v_users]
+-- Views/Notes/v_text_notes.sql
+CREATE OR ALTER VIEW [notes].[v_text_notes]
 AS
-SELECT id, email, created_at_utc
-FROM [identity].[users];
+SELECT id, user_id, title, text, created_at_utc, updated_at_utc
+FROM [notes].[text_notes]
+WHERE deleted_at_utc IS NULL;
 ```
 
 **Rules:**
@@ -795,14 +792,11 @@ All tests use `ErrorTestFixture` which discovers assemblies and resource manifes
 
 ---
 
-## Observability (Planned)
+## Observability
 
-- OpenTelemetry for distributed tracing
-- Health checks at `/health/live` and `/health/ready`
-- Metrics
-- Correlation ID propagation
+Serilog structured logging; `traceId` and `correlationId` are included in all `ProblemDetails` responses (including auth failures).
 
-Currently implemented: Serilog structured logging, `traceId` and `correlationId` in all `ProblemDetails` responses (including auth failures).
+When adding distributed tracing, health checks (`/health/live`, `/health/ready`), or metrics, follow the existing correlation-ID and structured-logging conventions.
 
 ---
 
@@ -899,19 +893,17 @@ All projects via `Directory.Build.props`: `net10.0`, nullable enable, implicit u
 | Asp.Versioning.Mvc | MyOS.API |
 | FluentMigrator | MyOS.Migrator |
 
-**SQLKata** — referenced in instructions for query-side reads but **not yet in any csproj**. Add to module Infrastructure when implementing the first Query handler.
-
 ---
 
 ## Testing
 
-| Type | Tool | Status | Purpose |
-|---|---|---|---|
-| Unit | xUnit | **Implemented** (`MyOS.Tests`) | Translation completeness, error code conventions |
-| Integration | xUnit + Testcontainers | Planned | API endpoints with real SQL Server |
-| Architecture | ArchUnitNET or NetArchTest | Planned | Layer boundary enforcement |
+| Type | Tool | Purpose |
+|---|---|---|
+| Unit | xUnit | Translation completeness, error code conventions (`MyOS.Tests`) |
+| Integration | xUnit + Testcontainers | API endpoints with real SQL Server |
+| Architecture | ArchUnitNET or NetArchTest | Layer boundary enforcement |
 
-**Implemented tests** (`MyOS.Tests/Translation/`):
+**`MyOS.Tests/Translation/`:**
 - `TranslationCompletenessTests` — all error codes have translations for all languages
 - `ErrorCodeConventionTests` — `Error.Code` matches `"{ClassName}.{FieldName}"`
 - `ResourceKeyConventionTests` — no orphaned `.resx` keys, correct format
@@ -942,14 +934,3 @@ Rules:
 14. Expose `Add{Name}Module(IServiceCollection, IConfiguration)` from Infrastructure DI — registers EF configs, repos, application DI
 15. Register in `Program.cs` via `builder.Services.Add{Name}Module(builder.Configuration)`
 16. Add controllers in `MyOS.API/` extending `ApiControllerBase`, with `[ApiVersion("1.0")]` and `[Authorize]` where needed
-
----
-
-## Discrepancy Notes
-
-- `copilot-instructions.md` shows solution path as `src/MyOS.Api`, but the actual project is `MyOS.API/` at repo root (no `src/` folder in use)
-- `copilot-instructions.md` mentions `MyOS.Modules.*` naming — current Identity module uses `MyOS.Identity.*` (without `Modules` segment). Future modules should follow `MyOS.Modules.{Name}.*`
-- System migration `20260426_CreateSqlFileHistoryTable.cs` uses `[Migration(2026042601)]` format (no time component) — standardize on full `YYYYMMDDHHNN` format for all new migrations
-- OpenTelemetry, health checks — **planned, not implemented**
-- SQLKata — **implemented** (`SqlKata.Execution` in `Core.Application`, `QueryFactory` scoped in `AddCore()`, `GetPagingListAsync<T>` extension in `Core.Application/SqlKata/`)
-- `MyOS.Tests` — **implemented** (translation completeness + error code convention tests)
