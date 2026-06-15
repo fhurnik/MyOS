@@ -1,9 +1,10 @@
 using FluentValidation;
 using MyOS.Core.Application.Abstractions;
+using MyOS.Core.Application.Abstractions.BusinessRules;
 using MyOS.Core.Application.Abstractions.Messaging;
 using MyOS.Core.Application.Abstractions.Results;
 using MyOS.Identity.Application.Abstractions;
-using MyOS.Identity.Application.Errors;
+using MyOS.Identity.Application.Commands.Register.BusinesRules;
 using MyOS.Identity.Domain.Users;
 
 namespace MyOS.Identity.Application.Commands.Register
@@ -32,9 +33,11 @@ namespace MyOS.Identity.Application.Commands.Register
     {
         public async Task<Result<Guid>> Handle(RegisterCommand command, CancellationToken cancellationToken)
         {
-            var existing = await userRepository.GetByEmailAsync(command.Email, cancellationToken);
-            if (existing is not null)
-                return Result<Guid>.Failure(UserErrors.EmailAlreadyInUse);
+            var check = await BusinessRuleChecker.CheckAsync(cancellationToken,
+                new EmailMustBeUniqueRule(userRepository, command.Email));
+
+            if (check.IsFailure)
+                return Result<Guid>.Failure(check.Error);
 
             var passwordHash = passwordHasher.Hash(command.Password);
             var user = User.Create(command.FirstName, command.LastName, command.Email, passwordHash);

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyOS.API.Controllers.Identity.Requests;
 using MyOS.Identity.Application.Commands.Login;
-using MyOS.Identity.Application.Commands.RefreshToken;
+using MyOS.Identity.Application.Commands.RefreshTokens;
 using MyOS.Identity.Application.Commands.Register;
 
 namespace MyOS.API.Controllers.Identity

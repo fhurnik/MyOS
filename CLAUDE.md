@@ -194,7 +194,7 @@ The entity-slice pattern is the single organizing principle for all three layers
 
 | Layer | Folder structure |
 |---|---|
-| Application | `Notes/TextNotes/`, `Notes/CheckList/` — commands, queries, handlers, `Shared/` DTOs |
+| Application | `Notes/TextNotes/`, `Notes/CheckList/` — commands, queries, handlers, `Shared/` DTOs, optional `BusinesRules/` — `{Condition}Rule` classes implementing `IBusinessRule<T>` |
 | Domain | `Notes/TextNotes/`, `Notes/CheckList/` — entities, value objects, repository interfaces |
 | Infrastructure | `EntityConfigurations/TextNotes/`, `EntityConfigurations/CheckList/` — EF configs |
 
@@ -446,6 +446,87 @@ FluentValidation via MediatR pipeline behavior (`ValidationBehavior<TRequest, TR
 **Register validators** via `services.AddValidatorsFromAssembly(...)` in the module's Application DI extension.
 
 **Validator placement:** in the same file as the Command it validates (slice convention).
+
+---
+
+## Business Rules — Complex Cross-Entity Checks
+
+Handlers follow a strict 4-step flow:
+
+```
+1. FluentValidation (pipeline) — syntax/format validation, no I/O
+2. Business Rules               — everything that needs a repo/DB lookup to decide
+3. Mutation                     — entity method calls (Create/Update/Revoke/...)
+4. Save                         — IUnitOfWork.SaveChangesAsync (once)
+```
+
+**Rule:** business rules are pure checks — pass or fail. They never fetch-and-return data to
+the handler. If the handler needs an entity for the mutation step, the handler fetches it
+itself (via the repository it already has injected) BEFORE running the checks, then passes the
+(possibly `null`) entity into the rule — the rule only validates its state, it does not load
+it. The only exception is a rule whose check is INHERENTLY a query the handler has no other
+reason to run (e.g. uniqueness by an alternate key) — it queries internally but still returns
+pass/fail only, never an entity.
+
+The handler calls ALL rules through a single `BusinessRuleChecker.CheckAsync(...)` and checks
+`IsFailure` **exactly once**, regardless of how many rules there are.
+
+**`IBusinessRule`** (`Core.Application/Abstractions/BusinessRules/`):
+```csharp
+public interface IBusinessRule
+{
+    Error Error { get; }
+
+    Task<bool> CheckAsync(CancellationToken cancellationToken);
+}
+```
+
+- **`CheckAsync`** returns `true` if the rule is satisfied, `false` otherwise — it never builds
+  a `Result` itself.
+- **`Error`** is the error to return when `CheckAsync` returns `false` — normally a direct
+  reference to a static `{Entity}Errors.*` field. For dynamic message placeholders, return
+  `SomeErrors.Code with { Parameters = ... }` — `Error` is a `record`, so `with` overrides only
+  `Parameters` while reusing the existing error code/type.
+
+**`BusinessRuleChecker.CheckAsync(ct, params IBusinessRule[] rules)`** — runs the rules
+sequentially; on the first rule whose `CheckAsync` returns `false`, returns
+`Result<Unit>.Failure(rule.Error)`. If all rules pass, returns `Result<Unit>.Success(Unit.Value)`.
+
+**Pattern** (handler fetches, rules validate):
+```csharp
+var user = await userRepository.GetByIdAsync(currentUser.Id, cancellationToken);
+var existingToken = await userRepository.GetRefreshTokenAsync(command.RefreshToken, cancellationToken);
+
+var check = await BusinessRuleChecker.CheckAsync(cancellationToken,
+    new UserMustBeActiveRule(user),
+    new RefreshTokenMustBeActiveRule(existingToken, user?.Id));
+
+if (check.IsFailure)
+    return Result<AuthTokens>.Failure(check.Error);
+
+user!.ChangeLanguage(command.Language);
+existingToken!.Revoke(replacedByToken: tokens.RefreshToken);
+```
+
+**Location:** rules ALWAYS live in a `BusinesRules/` subfolder — never directly alongside the
+command/handler files.
+- Legacy modules (`Identity.*`): a rule specific to one command goes in that command's
+  `BusinesRules/` subfolder (`Commands/Register/BusinesRules/EmailMustBeUniqueRule.cs`); a rule
+  shared across commands goes in `Commands/Shared/BusinesRules/`.
+- New modules (slice-per-entity): `{Entity}/BusinesRules/{Condition}Rule.cs`.
+
+**Naming:** `{Condition}Rule`, e.g. `EmailMustBeUniqueRule`, `UserMustBeActiveRule`,
+`RefreshTokenMustBeActiveRule`.
+
+**Implementation:** `internal sealed class`. Rules that validate an already-loaded entity take
+it (nullable) as a constructor parameter and perform no I/O. Rules whose check is inherently a
+query (uniqueness, existence by an alternate key) inject the repository instead. Not registered
+in DI — the handler creates it via `new`. Returns `Error` values from existing static
+`{Entity}Errors` classes.
+
+**What is NOT a Business Rule:** fetching entities — always the handler's job, never the rule's;
+comparisons over data already loaded by the handler; entity computed properties — those stay
+inline / on the entity.
 
 ---
 

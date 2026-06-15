@@ -1,13 +1,14 @@
 using FluentValidation;
 using MyOS.Core.Application.Abstractions;
+using MyOS.Core.Application.Abstractions.BusinessRules;
 using MyOS.Core.Application.Abstractions.Messaging;
 using MyOS.Core.Application.Abstractions.Results;
 using MyOS.Identity.Application.Abstractions;
 using MyOS.Identity.Application.Commands.Shared;
-using MyOS.Identity.Application.Errors;
+using MyOS.Identity.Application.Commands.Shared.BusinesRules;
 using MyOS.Identity.Domain.Users;
 
-namespace MyOS.Identity.Application.Commands.RefreshToken
+namespace MyOS.Identity.Application.Commands.RefreshTokens
 {
     public sealed record RefreshTokenCommand(string Token) : ICommand<AuthTokens>;
 
@@ -27,15 +28,19 @@ namespace MyOS.Identity.Application.Commands.RefreshToken
         public async Task<Result<AuthTokens>> Handle(RefreshTokenCommand command, CancellationToken cancellationToken)
         {
             var existingToken = await userRepository.GetRefreshTokenAsync(command.Token, cancellationToken);
-            if (existingToken is null || !existingToken.IsActive)
-                return Result<AuthTokens>.Failure(UserErrors.InvalidRefreshToken);
+            var user = existingToken is not null
+                ? await userRepository.GetByIdAsync(existingToken.UserId, cancellationToken)
+                : null;
 
-            var user = await userRepository.GetByIdAsync(existingToken.UserId, cancellationToken);
-            if (user is null || !user.IsActive)
-                return Result<AuthTokens>.Failure(UserErrors.AccountDisabled);
+            var check = await BusinessRuleChecker.CheckAsync(cancellationToken,
+                new RefreshTokenMustBeActiveRule(existingToken),
+                new UserMustBeActiveRule(user));
 
-            var tokens = await authTokenIssuer.IssueAsync(user, cancellationToken);
-            existingToken.Revoke(replacedByToken: tokens.RefreshToken);
+            if (check.IsFailure)
+                return Result<AuthTokens>.Failure(check.Error);
+
+            var tokens = await authTokenIssuer.IssueAsync(user!, cancellationToken);
+            existingToken!.Revoke(replacedByToken: tokens.RefreshToken);
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 

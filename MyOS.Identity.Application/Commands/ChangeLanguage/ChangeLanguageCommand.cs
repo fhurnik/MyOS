@@ -1,11 +1,12 @@
 using FluentValidation;
 using MyOS.Core.Application.Abstractions;
+using MyOS.Core.Application.Abstractions.BusinessRules;
 using MyOS.Core.Application.Abstractions.Messaging;
 using MyOS.Core.Application.Abstractions.Results;
 using MyOS.Core.Domain.Enums;
 using MyOS.Identity.Application.Abstractions;
 using MyOS.Identity.Application.Commands.Shared;
-using MyOS.Identity.Application.Errors;
+using MyOS.Identity.Application.Commands.Shared.BusinesRules;
 using MyOS.Identity.Domain.Users;
 
 namespace MyOS.Identity.Application.Commands.ChangeLanguage
@@ -30,17 +31,19 @@ namespace MyOS.Identity.Application.Commands.ChangeLanguage
         public async Task<Result<AuthTokens>> Handle(ChangeLanguageCommand command, CancellationToken cancellationToken)
         {
             var user = await userRepository.GetByIdAsync(currentUser.Id, cancellationToken);
-            if (user is null || !user.IsActive)
-                return Result<AuthTokens>.Failure(UserErrors.AccountDisabled);
-
             var existingToken = await userRepository.GetRefreshTokenAsync(command.RefreshToken, cancellationToken);
-            if (existingToken is null || !existingToken.IsActive || existingToken.UserId != user.Id)
-                return Result<AuthTokens>.Failure(UserErrors.InvalidRefreshToken);
 
-            user.ChangeLanguage(command.Language);
+            var check = await BusinessRuleChecker.CheckAsync(cancellationToken,
+                new UserMustBeActiveRule(user),
+                new RefreshTokenMustBeActiveRule(existingToken, user?.Id));
+
+            if (check.IsFailure)
+                return Result<AuthTokens>.Failure(check.Error);
+
+            user!.ChangeLanguage(command.Language);
 
             var tokens = await authTokenIssuer.IssueAsync(user, cancellationToken);
-            existingToken.Revoke(replacedByToken: tokens.RefreshToken);
+            existingToken!.Revoke(replacedByToken: tokens.RefreshToken);
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 

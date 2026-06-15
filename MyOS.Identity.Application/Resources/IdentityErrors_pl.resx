@@ -31,7 +31,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="UserErrors.EmailAlreadyInUse" xml:space="preserve">
-    <value>Użytkownik z tym adresem email jest już zarejestrowany.</value>
+    <value>Użytkownik z adresem {email} jest już zarejestrowany.</value>
   </data>
   <data name="UserErrors.InvalidCredentials" xml:space="preserve">
     <value>Nieprawidłowy email lub hasło.</value>
