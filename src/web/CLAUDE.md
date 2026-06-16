@@ -43,6 +43,8 @@
 - Add per-mutation `onError` handlers for generic backend error display — `MutationCache.onError` in `query-client.ts` already shows a `toast.error` for every failed mutation; add `onError` only when mutation-specific logic is needed
 - Write Zod schemas with hardcoded error strings — schemas that power forms use factory functions accepting a plain error object (`{ titleRequired: string, ... }`); the component calls `t()` and passes the translated strings to the factory
 - Wrap `BreadcrumbLink` (or use `AppBreadcrumbs`) in a Server Component — `BreadcrumbLink` uses `useRender` from `@base-ui/react` and requires `"use client"`
+- Add nav links directly to `Sidebar.tsx` — add them to `src/shared/components/layout/nav-config.ts` instead; both desktop Sidebar and mobile MobileNav drawer import from there
+- Use `h-[calc(100vh-...)]` for full-height pages — use `h-[calc(100dvh-var(--mobile-header-h)-2rem)] md:h-[calc(100dvh-3rem)]` so the mobile header is accounted for (`--mobile-header-h: 3.5rem` is defined in globals.css `:root`)
 
 ---
 
@@ -126,11 +128,14 @@ src/web/
         │   ├── common.types.ts ← Language, SUPPORTED_LOCALES, DEFAULT_LOCALE
         │   └── tanstack.d.ts   ← TanStack Query type augmentation (mutationMeta.suppressToast)
         ├── components/
-        │   ├── ui/             ← shadcn copies: button, input, label, card, alert, separator, dialog, breadcrumb, sonner
+        │   ├── ui/             ← shadcn copies: button, input, label, card, alert, separator, dialog, breadcrumb, sonner, sheet
         │   │   ├── confirm-dialog.tsx  ← reusable delete confirmation modal (wraps Dialog)
         │   │   └── paginated-list.tsx  ← generic PaginatedList<T>; list mode (renderItem) or table mode (columns); sort, row click, row actions
         │   └── layout/
-        │       ├── Sidebar.tsx         ← only file to change when adding a new module nav link
+        │       ├── nav-config.ts       ← only file to change when adding a new module nav link
+        │       ├── Sidebar.tsx         ← desktop sidebar (hidden md:flex); imports nav links from nav-config.ts
+        │       ├── MobileNav.tsx       ← Sheet drawer for mobile navigation; imports from nav-config.ts
+        │       ├── MobileHeader.tsx    ← top bar shown on mobile (<md); contains MobileNav
         │       └── AppBreadcrumbs.tsx  ← "use client" breadcrumb wrapper; accepts BreadcrumbEntry[]
         ├── hooks/
         │   ├── useSession.ts
@@ -278,6 +283,36 @@ components.json aliases ensure correct placement.
 
 ## Shared UI Patterns
 
+### Responsive layout
+
+The app shell handles mobile responsiveness automatically — no per-page action needed:
+- `Sidebar` is `hidden md:flex` — invisible below `md` (768px)
+- `MobileHeader` is `flex md:hidden` — visible below `md`, contains hamburger → `Sheet` drawer with full nav
+- `main` padding: `p-4 md:p-6`
+
+**CSS variable** — `--mobile-header-h: 3.5rem` is defined in globals.css `:root`. Use it whenever calculating heights that must account for the mobile top bar.
+
+**Full-height detail pages** (internal scroll, form pinned at bottom — like checklist detail):
+```tsx
+<div className="flex flex-col gap-6 h-[calc(100dvh-var(--mobile-header-h)-2rem)] md:h-[calc(100dvh-3rem)]">
+```
+
+**New content pages** — write mobile-first Tailwind. Common patterns:
+```tsx
+// grids
+<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+// side-by-side form fields
+<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+// stacking controls
+<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+```
+
+`dvh` (dynamic viewport height) is preferred over `vh` on mobile — it accounts for the browser address bar.
+
+---
+
 ### Backend error toasts
 `MutationCache.onError` in `src/shared/lib/query-client.ts` catches every failed mutation and calls `toast.error(error.detail)`. The `<Toaster />` from `@/shared/components/ui/sonner` is mounted in `src/app/layout.tsx`. No additional setup needed — backend errors surface automatically.
 
@@ -394,5 +429,5 @@ When a new backend module is ready (Finance, Fitness, Learning):
 5. Create `src/modules/{name}/components/` — React components
 6. Create `src/app/[locale]/(app)/{name}/page.tsx` (and sub-routes)
 7. Add translation keys to `messages/en.json` and `messages/pl.json`
-8. Add nav link in `src/shared/components/layout/Sidebar.tsx` — **only file to touch in shared**
+8. Add nav link arrays in `src/shared/components/layout/nav-config.ts` — **only file to touch in shared** (both desktop Sidebar and mobile MobileNav drawer import from it)
 9. Add to proxy.ts `PROTECTED_SEGMENTS` if the route name differs from module name

@@ -28,7 +28,7 @@ export function CheckListItem({ item, onToggle, onDelete }: CheckListItemProps) 
       </span>
       <button
         onClick={onDelete}
-        className="text-muted-foreground/50 transition-colors hover:text-destructive"
+        className="flex h-11 w-11 items-center justify-center text-muted-foreground/50 transition-colors hover:text-destructive"
         aria-label="Remove item"
       >
         ×

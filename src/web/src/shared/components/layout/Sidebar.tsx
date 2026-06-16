@@ -3,37 +3,10 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import {
-  Home,
-  FileText,
-  ListTodo,
-  Settings2,
-  GraduationCap,
-  Wallet,
-  Dumbbell,
-  LogOut,
-} from "lucide-react"
+import { Home, LogOut } from "lucide-react"
 import { useRequiredSession } from "@/shared/hooks/useSession"
 import { cn } from "@/shared/lib/utils"
-
-const NOTES_SUB_LINKS = [
-  { href: "/notes", labelKey: "textNotes", Icon: FileText },
-  { href: "/notes/checklists", labelKey: "checkLists", Icon: ListTodo },
-] as const
-
-const NAV_LINKS = [
-  { href: "/settings", labelKey: "settings", Icon: Settings2 },
-] as const
-
-const COMING_SOON = [
-  { labelKey: "learning", Icon: GraduationCap },
-  { labelKey: "finance", Icon: Wallet },
-  { labelKey: "fitness", Icon: Dumbbell },
-] as const
-
-function getInitials(email: string): string {
-  return (email.split("@")[0] ?? "").slice(0, 2).toUpperCase()
-}
+import { NOTES_SUB_LINKS, NAV_LINKS, COMING_SOON, getInitials } from "./nav-config"
 
 export function Sidebar() {
   const t = useTranslations("navigation")
@@ -52,7 +25,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r bg-card px-3 py-4">
+    <aside className="hidden md:flex w-56 shrink-0 flex-col border-r bg-card px-3 py-4">
       {/* User header */}
       <div className="mb-6 flex items-center gap-2.5 px-1">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">

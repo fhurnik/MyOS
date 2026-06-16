@@ -101,7 +101,7 @@ export function PaginatedList<T>({
                     key={col.key}
                     onClick={isSortable ? () => onSortChange!(col.key) : undefined}
                     className={cn(
-                      "px-4 py-2 text-left text-sm font-medium text-muted-foreground",
+                      "px-2 py-2 text-left text-sm font-medium text-muted-foreground sm:px-4",
                       isSortable && "cursor-pointer select-none hover:text-foreground",
                       orderBy === col.key && "text-foreground",
                       col.headerClassName
@@ -114,7 +114,7 @@ export function PaginatedList<T>({
                   </th>
                 )
               })}
-              {rowActions && <th className="w-12" />}
+              {rowActions && <th className="w-10 sm:w-12" />}
             </tr>
           </thead>
           <tbody>
@@ -125,12 +125,12 @@ export function PaginatedList<T>({
                 className={cn("border-b last:border-0 hover:bg-accent/50 transition-colors", onRowClick && "cursor-pointer")}
               >
                 {columns.map((col) => (
-                  <td key={col.key} className={cn("px-4 py-3 text-sm", col.cellClassName)}>
+                  <td key={col.key} className={cn("px-2 py-3 text-sm sm:px-4", col.cellClassName)}>
                     {col.render(item)}
                   </td>
                 ))}
                 {rowActions && (
-                  <td className="w-12 px-2 py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="w-10 px-1 py-2 text-right sm:w-12 sm:px-2" onClick={(e) => e.stopPropagation()}>
                     {rowActions(item)}
                   </td>
                 )}
@@ -174,7 +174,7 @@ export function PaginatedList<T>({
         </>
       )}
 
-      <div className="flex items-center justify-between pt-4">
+      <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <select
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
