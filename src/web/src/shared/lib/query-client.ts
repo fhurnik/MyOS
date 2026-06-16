@@ -22,7 +22,8 @@ export function getQueryClient() {
   if (!browserQueryClient) {
     browserQueryClient = new QueryClient({
       mutationCache: new MutationCache({
-        onError: (error) => {
+        onError: (error, _variables, _context, mutation) => {
+          if (mutation.meta?.suppressToast) return
           toast.error(ApiError.isApiError(error) ? error.detail : "An error occurred")
         },
       }),

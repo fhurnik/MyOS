@@ -12,6 +12,7 @@
     "previousPage": "Previous",
     "nextPage": "Next",
     "pageOf": "Page {page} of {total}",
+    "loadError": "Failed to load data. Please try again.",
     "sortColumns": {
       "title": "Title",
       "createdAt": "Creation date"

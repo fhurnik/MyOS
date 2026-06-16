@@ -12,6 +12,7 @@
     "previousPage": "Poprzednia",
     "nextPage": "Następna",
     "pageOf": "Strona {page} z {total}",
+    "loadError": "Błąd ładowania danych. Spróbuj ponownie.",
     "sortColumns": {
       "title": "Tytuł",
       "createdAt": "Data utworzenia"

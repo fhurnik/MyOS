@@ -82,11 +82,12 @@ src/web/
     │   │   ├── logout/route.ts ← DELETE: clears cookies
     │   │   └── refresh/route.ts← POST: refreshes tokens, updates cookies
     │   └── [locale]/
-    │       ├── layout.tsx      ← NextIntlClientProvider + SessionProvider
+    │       ├── layout.tsx      ← NextIntlClientProvider only
     │       ├── (public)/       ← no auth required
     │       │   ├── login/
     │       │   └── register/
     │       └── (app)/          ← auth-guarded (proxy.ts enforces)
+    │           ├── layout.tsx  ← SessionProvider + Sidebar layout (re-renders on each (app) entry)
     │           ├── home/
     │           ├── notes/
     │           ├── settings/
@@ -114,13 +115,16 @@ src/web/
         ├── lib/
         │   ├── api-client.ts   ← single fetch wrapper; empty base URL client-side
         │   ├── api-error.ts    ← ApiError class from ProblemDetails
+        │   ├── format.ts       ← formatDate(iso) — shared date formatting
+        │   ├── paging.ts       ← buildPagingParams(PagingRequest) → query string
         │   ├── session.ts      ← getServerSession(), getServerToken() — server only
         │   ├── language.ts     ← Language enum ↔ locale string map
         │   ├── query-client.ts ← TanStack Query singleton
         │   └── utils.ts        ← cn() = clsx + tailwind-merge
         ├── types/
         │   ├── api.types.ts    ← PagingList<T>, ProblemDetails, PagingRequest
-        │   └── common.types.ts ← Language, SUPPORTED_LOCALES, DEFAULT_LOCALE
+        │   ├── common.types.ts ← Language, SUPPORTED_LOCALES, DEFAULT_LOCALE
+        │   └── tanstack.d.ts   ← TanStack Query type augmentation (mutationMeta.suppressToast)
         ├── components/
         │   ├── ui/             ← shadcn copies: button, input, label, card, alert, separator, dialog, breadcrumb, sonner
         │   │   ├── confirm-dialog.tsx  ← reusable delete confirmation modal (wraps Dialog)
@@ -276,6 +280,17 @@ components.json aliases ensure correct placement.
 
 ### Backend error toasts
 `MutationCache.onError` in `src/shared/lib/query-client.ts` catches every failed mutation and calls `toast.error(error.detail)`. The `<Toaster />` from `@/shared/components/ui/sonner` is mounted in `src/app/layout.tsx`. No additional setup needed — backend errors surface automatically.
+
+**Suppressing the global toast** — when a mutation has its own inline error display (e.g. an `<Alert>` in a form), the global toast would duplicate it. Add `meta: { suppressToast: true }` to the `useMutation` call to opt out:
+
+```ts
+return useMutation({
+  meta: { suppressToast: true },
+  mutationFn: ...,
+})
+```
+
+The type for `meta` is declared in `src/shared/types/tanstack.d.ts` — no extra imports needed.
 
 ### Paginated lists
 Use `usePaginatedNavigation` + `PaginatedList<T>` for every list page. The hook is generic over sort column names (`TColumn extends string`):

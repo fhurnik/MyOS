@@ -48,8 +48,8 @@ export function CheckListDetail({ id, initialData }: CheckListDetailProps) {
   }
 
   function handleConfirmDeleteItem() {
-    if (deleteItemId) deleteItem(deleteItemId)
-    setDeleteItemId(null)
+    if (!deleteItemId) return
+    deleteItem(deleteItemId, { onSuccess: () => setDeleteItemId(null) })
   }
 
   if (!list) return null

@@ -5,7 +5,7 @@ export async function changeLanguageApi(
   body: ChangeLanguageBody,
   token?: string
 ): Promise<AuthTokens> {
-  return apiClient<AuthTokens>("/api/v1.0/users/me/language", {
+  return apiClient<AuthTokens>("/api/v1/users/me/language", {
     method: "PATCH",
     body,
     token,

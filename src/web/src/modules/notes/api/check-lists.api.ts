@@ -1,4 +1,5 @@
 import { apiClient } from "@/shared/lib/api-client"
+import { buildPagingParams } from "@/shared/lib/paging"
 import type { PagingList, PagingRequest } from "@/shared/types/api.types"
 import type {
   CheckListDto,
@@ -16,13 +17,7 @@ export async function getCheckListsApi(
   params: PagingRequest = {},
   token?: string
 ): Promise<PagingList<CheckListSummaryDto>> {
-  const query = new URLSearchParams()
-  if (params.page) query.set("page", String(params.page))
-  if (params.pageSize) query.set("pageSize", String(params.pageSize))
-  if (params.orderBy) query.set("orderBy", params.orderBy)
-  if (params.orderByDesc) query.set("orderByDesc", "true")
-  const qs = query.toString()
-  return apiClient<PagingList<CheckListSummaryDto>>(`${BASE}${qs ? `?${qs}` : ""}`, { token })
+  return apiClient<PagingList<CheckListSummaryDto>>(`${BASE}${buildPagingParams(params)}`, { token })
 }
 
 export async function getCheckListApi(id: string, token?: string): Promise<CheckListDto> {

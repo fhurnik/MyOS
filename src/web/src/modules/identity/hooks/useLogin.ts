@@ -4,11 +4,14 @@ import { useMutation } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import type { LoginFormValues } from "@/modules/identity/schemas/login.schema"
 import type { SessionPayload } from "@/modules/identity/types/identity.types"
+import type { ProblemDetails } from "@/shared/types/api.types"
+import { ApiError } from "@/shared/lib/api-error"
 
 export function useLogin() {
   const router = useRouter()
 
   return useMutation({
+    meta: { suppressToast: true },
     mutationFn: async (values: LoginFormValues): Promise<SessionPayload> => {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -16,10 +19,8 @@ export function useLogin() {
         body: JSON.stringify(values),
       })
       if (!res.ok) {
-        const problem = await res.json()
-        const err = new Error(problem.detail || "Login failed") as Error & { code?: string }
-        err.code = problem.errorCode
-        throw err
+        const problem: ProblemDetails = await res.json()
+        throw new ApiError(problem)
       }
       return res.json()
     },

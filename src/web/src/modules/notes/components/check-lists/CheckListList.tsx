@@ -12,6 +12,7 @@ import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog"
 import { usePaginatedNavigation } from "@/shared/hooks/usePaginatedNavigation"
 import type { PagingList } from "@/shared/types/api.types"
 import type { CheckListSummaryDto } from "@/modules/notes/types/notes.types"
+import { formatDate } from "@/shared/lib/format"
 
 type CheckListOrderBy = "title" | "createdAtUtc"
 
@@ -21,10 +22,6 @@ interface CheckListListProps {
   initialPageSize: number
   initialOrderBy?: CheckListOrderBy
   initialOrderByDesc?: boolean
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
 }
 
 export function CheckListList({
@@ -49,7 +46,7 @@ export function CheckListList({
       initialOrderByDesc,
     })
 
-  const { data, isLoading } = useCheckLists({
+  const { data, isLoading, isError } = useCheckLists({
     params: { page, pageSize, orderBy, orderByDesc },
     initialData:
       page === initialPage &&
@@ -67,6 +64,7 @@ export function CheckListList({
       <PaginatedList
         data={data}
         isLoading={isLoading}
+        isError={isError}
         page={page}
         pageSize={pageSize}
         onGoToPage={goToPage}

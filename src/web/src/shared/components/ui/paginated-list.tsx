@@ -26,6 +26,7 @@ export interface TableColumnDef<T> {
 interface SharedProps<T> {
   data: PagingList<T> | undefined
   isLoading: boolean
+  isError?: boolean
   page: number
   pageSize: number
   onGoToPage: (page: number) => void
@@ -41,7 +42,7 @@ interface SharedProps<T> {
 
 type PaginatedListProps<T> = SharedProps<T> & (
   | { columns: TableColumnDef<T>[]; onRowClick?: (item: T) => void; rowActions?: (item: T) => ReactNode; renderItem?: undefined; itemsClassName?: undefined; sortColumns?: undefined }
-  | { columns?: undefined; onRowClick?: undefined; renderItem: (item: T) => ReactNode; itemsClassName?: string; sortColumns?: SortColumnDef[] }
+  | { columns?: undefined; onRowClick?: undefined; rowActions?: undefined; renderItem: (item: T) => ReactNode; itemsClassName?: string; sortColumns?: SortColumnDef[] }
 )
 
 function sortIcon(columnKey: string, orderBy: string | undefined, orderByDesc: boolean) {
@@ -54,6 +55,7 @@ function sortIcon(columnKey: string, orderBy: string | undefined, orderByDesc: b
 export function PaginatedList<T>({
   data,
   isLoading,
+  isError,
   page,
   pageSize,
   onGoToPage,
@@ -76,6 +78,10 @@ export function PaginatedList<T>({
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">…</p>
+  }
+
+  if (isError && !data?.items.length) {
+    return <p className="py-8 text-center text-sm text-destructive">{tCommon("loadError")}</p>
   }
 
   if (!data?.items.length) {

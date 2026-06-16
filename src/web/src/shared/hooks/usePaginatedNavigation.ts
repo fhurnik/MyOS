@@ -56,12 +56,13 @@ export function usePaginatedNavigation<TColumn extends string = string>({
     scrollToListIfNeeded()
   }
 
-  function handleSortChange(column: TColumn) {
-    const newDesc = column === orderBy ? !orderByDesc : false
-    setOrderBy(column)
+  function handleSortChange(column: string) {
+    const typedColumn = column as TColumn
+    const newDesc = typedColumn === orderBy ? !orderByDesc : false
+    setOrderBy(typedColumn)
     setOrderByDesc(newDesc)
     setPage(1)
-    router.push(buildUrl(1, pageSize, column, newDesc), { scroll: false })
+    router.push(buildUrl(1, pageSize, typedColumn, newDesc), { scroll: false })
     scrollToListIfNeeded()
   }
 

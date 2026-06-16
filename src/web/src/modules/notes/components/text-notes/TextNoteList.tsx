@@ -12,6 +12,7 @@ import { ConfirmDialog } from "@/shared/components/ui/confirm-dialog"
 import { usePaginatedNavigation } from "@/shared/hooks/usePaginatedNavigation"
 import type { PagingList } from "@/shared/types/api.types"
 import type { TextNoteDto } from "@/modules/notes/types/notes.types"
+import { formatDate } from "@/shared/lib/format"
 
 type TextNoteOrderBy = "title" | "createdAtUtc"
 
@@ -21,10 +22,6 @@ interface TextNoteListProps {
   initialPageSize: number
   initialOrderBy?: TextNoteOrderBy
   initialOrderByDesc?: boolean
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
 }
 
 export function TextNoteList({
@@ -49,7 +46,7 @@ export function TextNoteList({
       initialOrderByDesc,
     })
 
-  const { data, isLoading } = useTextNotes({
+  const { data, isLoading, isError } = useTextNotes({
     params: { page, pageSize, orderBy, orderByDesc },
     initialData:
       page === initialPage &&
@@ -67,6 +64,7 @@ export function TextNoteList({
       <PaginatedList
         data={data}
         isLoading={isLoading}
+        isError={isError}
         page={page}
         pageSize={pageSize}
         onGoToPage={goToPage}
