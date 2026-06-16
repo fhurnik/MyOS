@@ -78,6 +78,28 @@ export function MobileNav() {
               {t("home")}
             </Link>
 
+            {/* Top-level links (Settings) */}
+            {NAV_LINKS.map(({ href, labelKey, Icon }) => {
+              const fullPath = `/${locale}${href}`
+              const isActive = pathname === fullPath || pathname.startsWith(fullPath + "/")
+              return (
+                <Link
+                  key={href}
+                  href={fullPath}
+                  onClick={close}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-md border-l-2 px-2 py-1.5 text-sm transition-colors",
+                    isActive
+                      ? "border-primary bg-primary/10 font-medium text-primary"
+                      : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {t(labelKey)}
+                </Link>
+              )
+            })}
+
             <div className="my-1" />
 
             {/* Notes module with sub-links */}
@@ -109,30 +131,6 @@ export function MobileNav() {
                 )
               })}
             </div>
-
-            <div className="my-1" />
-
-            {/* Top-level links */}
-            {NAV_LINKS.map(({ href, labelKey, Icon }) => {
-              const fullPath = `/${locale}${href}`
-              const isActive = pathname === fullPath || pathname.startsWith(fullPath + "/")
-              return (
-                <Link
-                  key={href}
-                  href={fullPath}
-                  onClick={close}
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-md border-l-2 px-2 py-1.5 text-sm transition-colors",
-                    isActive
-                      ? "border-primary bg-primary/10 font-medium text-primary"
-                      : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {t(labelKey)}
-                </Link>
-              )
-            })}
 
             <div className="my-2 border-t" />
 
