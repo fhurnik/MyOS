@@ -57,7 +57,7 @@ export function CheckListDetail({ id, initialData }: CheckListDetailProps) {
   const sortedItems = [...list.items].sort((a, b) => a.order - b.order)
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
+    <div className="mx-auto w-full max-w-lg flex flex-col flex-1 min-h-0 gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{list.title}</h1>
         <Button variant="destructive" size="sm" onClick={() => setDeleteListOpen(true)} disabled={deleting}>
@@ -65,7 +65,7 @@ export function CheckListDetail({ id, initialData }: CheckListDetailProps) {
         </Button>
       </div>
 
-      <ul className="space-y-1">
+      <ul className="flex-1 overflow-auto min-h-0 space-y-1">
         {sortedItems.map((item) => (
           <CheckListItem
             key={item.id}

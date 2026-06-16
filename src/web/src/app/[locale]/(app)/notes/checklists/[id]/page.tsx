@@ -13,7 +13,7 @@ export default async function CheckListDetailPage({ params }: Props) {
   const t = await getTranslations("navigation")
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6 h-[calc(100vh-3rem)]">
       <AppBreadcrumbs items={[
         { label: t("checkLists"), href: `/${locale}/notes/checklists` },
         { label: initialData?.title ?? "" },
