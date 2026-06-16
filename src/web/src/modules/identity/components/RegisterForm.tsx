@@ -9,7 +9,8 @@ import { useRegister } from "@/modules/identity/hooks/useRegister"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import { Alert } from "@/shared/components/ui/alert"
+import { Alert, AlertDescription } from "@/shared/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 export function RegisterForm() {
   const t = useTranslations("identity.register")
@@ -34,8 +35,9 @@ export function RegisterForm() {
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         {errorMessage && (
-          <Alert>
-            <p className="text-sm">{errorMessage}</p>
+          <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+            <AlertCircle />
+            <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
 

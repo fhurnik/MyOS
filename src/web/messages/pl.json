@@ -40,7 +40,8 @@
     "language": {
       "english": "Angielski",
       "polish": "Polski",
-      "changeSuccess": "Język został zmieniony"
+      "changeSuccess": "Język został zmieniony",
+      "selectorLabel": "Język"
     }
   },
   "notes": {
@@ -94,9 +95,17 @@
     "notesCount": "{count, plural, =0 {Brak notatek} one {# notatka} few {# notatki} other {# notatek}}",
     "checkListsCount": "{count, plural, =0 {Brak list} one {# lista} few {# listy} other {# list}}"
   },
+  "publicLayout": {
+    "taglineLine1": "Twój osobisty",
+    "taglineLine2": "system operacyjny.",
+    "subtitle": "Notatki, zadania, finanse, fitness — wszystko w jednym miejscu."
+  },
   "settings": {
     "title": "Ustawienia",
-    "language": "Język",
+    "language": {
+      "title": "Język",
+      "description": "Wybierz język interfejsu"
+    },
     "account": "Konto"
   }
 }

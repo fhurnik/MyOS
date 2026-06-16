@@ -70,6 +70,8 @@ async function proxyToBackend(request: NextRequest, path: string[]): Promise<Nex
   const contentType = request.headers.get("content-type")
   if (contentType) headers["content-type"] = contentType
   if (accessToken) headers["authorization"] = `Bearer ${accessToken}`
+  const acceptLanguage = request.headers.get("accept-language")
+  if (acceptLanguage) headers["accept-language"] = acceptLanguage
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD"
   const body = hasBody ? await request.arrayBuffer() : undefined

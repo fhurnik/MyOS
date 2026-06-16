@@ -23,7 +23,7 @@ namespace MyOS.Identity.Infrastructure.Services
                 new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim("language", language.ToString())
+                new Claim("language", ((int)language).ToString())
             };
 
             var token = new JwtSecurityToken(

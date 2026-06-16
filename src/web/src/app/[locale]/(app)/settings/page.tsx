@@ -1,11 +1,12 @@
 import { getTranslations } from "next-intl/server"
+import { LanguageSettings } from "@/modules/identity/components/LanguageSettings"
 
 export default async function SettingsPage() {
   const t = await getTranslations("settings")
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 max-w-lg">
       <h1 className="text-xl font-semibold">{t("title")}</h1>
-      <p className="text-muted-foreground">Coming soon</p>
+      <LanguageSettings />
     </div>
   )
 }

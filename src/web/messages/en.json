@@ -40,7 +40,8 @@
     "language": {
       "english": "English",
       "polish": "Polish",
-      "changeSuccess": "Language updated"
+      "changeSuccess": "Language updated",
+      "selectorLabel": "Language"
     }
   },
   "notes": {
@@ -94,9 +95,17 @@
     "notesCount": "{count, plural, =0 {No notes} one {# note} other {# notes}}",
     "checkListsCount": "{count, plural, =0 {No lists} one {# list} other {# lists}}"
   },
+  "publicLayout": {
+    "taglineLine1": "Your personal",
+    "taglineLine2": "operating system.",
+    "subtitle": "Notes, tasks, finance, fitness — all in one place."
+  },
   "settings": {
     "title": "Settings",
-    "language": "Language",
+    "language": {
+      "title": "Language",
+      "description": "Choose the language for the interface"
+    },
     "account": "Account"
   }
 }

@@ -42,8 +42,13 @@ namespace MyOS.Core.Infrastructure.Services
             get
             {
                 var value = User?.FindFirstValue("language");
-                return value is not null && Enum.TryParse<Language>(value, out var language)
-                    ? language
+                if (value is not null && Enum.TryParse<Language>(value, out var language))
+                    return language;
+
+                var header = httpContextAccessor.HttpContext?.Request.Headers.AcceptLanguage.ToString()
+                    .Split(',', ';')[0].Trim();
+                return header is not null && header.Equals("pl", StringComparison.OrdinalIgnoreCase)
+                    ? Language.Polish
                     : Language.English;
             }
         }

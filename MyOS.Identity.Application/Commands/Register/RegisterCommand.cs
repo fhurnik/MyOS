@@ -4,6 +4,7 @@ using MyOS.Core.Application.Abstractions.BusinessRules;
 using MyOS.Core.Application.Abstractions.Messaging;
 using MyOS.Core.Application.Abstractions.Results;
 using MyOS.Core.Application.Exceptions;
+using MyOS.Core.Domain.Enums;
 using MyOS.Identity.Application.Abstractions;
 using MyOS.Identity.Application.Commands.Register.BusinesRules;
 using MyOS.Identity.Application.Errors;
@@ -15,7 +16,8 @@ namespace MyOS.Identity.Application.Commands.Register
         string FirstName,
         string LastName,
         string Email,
-        string Password) : ICommand<Guid>;
+        string Password,
+        Language Language) : ICommand<Guid>;
 
     public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand>
     {
@@ -25,6 +27,7 @@ namespace MyOS.Identity.Application.Commands.Register
             RuleFor(x => x.LastName).NotEmpty().MaximumLength(100);
             RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(255);
             RuleFor(x => x.Password).NotEmpty().MinimumLength(8).MaximumLength(200);
+            RuleFor(x => x.Language).IsInEnum();
         }
     }
 
@@ -42,7 +45,7 @@ namespace MyOS.Identity.Application.Commands.Register
                 return Result<Guid>.Failure(check.Error);
 
             var passwordHash = passwordHasher.Hash(command.Password);
-            var user = User.Create(command.FirstName, command.LastName, command.Email, passwordHash);
+            var user = User.Create(command.FirstName, command.LastName, command.Email, passwordHash, command.Language);
 
             await userRepository.AddAsync(user, cancellationToken);
 

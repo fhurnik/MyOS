@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
 import { decodeJwt } from "jose"
-import { loginApi } from "@/modules/identity/api/auth.api"
+import { changeLanguageApi } from "@/modules/identity/api/users.api"
 import { ApiError } from "@/shared/lib/api-error"
-import type { LoginBody, SessionPayload } from "@/modules/identity/types/identity.types"
+import type { Language } from "@/shared/types/common.types"
+import type { SessionPayload } from "@/modules/identity/types/identity.types"
 
 const isProd = process.env.NODE_ENV === "production"
 
@@ -13,11 +15,21 @@ const COOKIE_OPTIONS = {
   path: "/",
 }
 
-export async function POST(request: Request) {
+export async function PATCH(request: Request) {
   try {
-    const body: LoginBody = await request.json()
-    const acceptLanguage = request.headers.get("Accept-Language") ?? undefined
-    const tokens = await loginApi(body, acceptLanguage)
+    const cookieStore = await cookies()
+    const refreshToken = cookieStore.get("refresh_token")?.value
+    const accessToken = cookieStore.get("access_token")?.value
+
+    if (!refreshToken) {
+      return NextResponse.json(
+        { detail: "Not authenticated", errorCode: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
+    const { language }: { language: Language } = await request.json()
+    const tokens = await changeLanguageApi({ language, refreshToken }, accessToken)
 
     const payload = decodeJwt(tokens.accessToken)
     const session: SessionPayload = {
@@ -38,7 +50,7 @@ export async function POST(request: Request) {
       )
     }
     return NextResponse.json(
-      { detail: "Login failed. Check your credentials.", errorCode: "UnknownError" },
+      { detail: "Language change failed.", errorCode: "UnknownError" },
       { status: 500 }
     )
   }

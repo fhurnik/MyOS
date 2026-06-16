@@ -20,7 +20,7 @@ namespace MyOS.API.Controllers.Identity
             CancellationToken cancellationToken)
         {
             var result = await sender.Send(
-                new RegisterCommand(request.FirstName, request.LastName, request.Email, request.Password),
+                new RegisterCommand(request.FirstName, request.LastName, request.Email, request.Password, CurrentUser.Language),
                 cancellationToken);
             return HandleResult(result);
         }
