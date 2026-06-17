@@ -9,5 +9,8 @@ namespace MyOS.Modules.Storage.Application.Errors
 
         public static readonly Error NotFound =
             Error.NotFound("QuotaErrors.NotFound");
+
+        public static readonly Error InsufficientSpace =
+            Error.Conflict("QuotaErrors.InsufficientSpace");
     }
 }

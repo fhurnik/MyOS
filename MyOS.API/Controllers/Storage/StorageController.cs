@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MyOS.Modules.Storage.Application.AllowedFileTypes;
 using MyOS.Modules.Storage.Application.Quotas;
 
 namespace MyOS.API.Controllers.Storage
@@ -13,6 +14,13 @@ namespace MyOS.API.Controllers.Storage
         public async Task<IActionResult> GetQuota(CancellationToken cancellationToken)
         {
             var result = await sender.Send(new GetQuotaQuery(), cancellationToken);
+            return HandleResult(result);
+        }
+
+        [HttpGet("allowed-file-types")]
+        public async Task<IActionResult> GetAllowedFileTypes(CancellationToken cancellationToken)
+        {
+            var result = await sender.Send(new GetAllowedFileTypesQuery(), cancellationToken);
             return HandleResult(result);
         }
     }

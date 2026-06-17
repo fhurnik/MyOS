@@ -25,6 +25,20 @@ namespace MyOS.Modules.Storage.Domain.Quotas
             CreatedAtUtc = DateTime.UtcNow;
         }
 
+        /// <summary>Reserves space for an uploaded file. Caller must verify available space first.</summary>
+        internal void Consume(long bytes)
+        {
+            UsedBytes += bytes;
+            UpdatedAtUtc = DateTime.UtcNow;
+        }
+
+        /// <summary>Frees space when a file is removed. Never drops below zero.</summary>
+        internal void Release(long bytes)
+        {
+            UsedBytes = Math.Max(0, UsedBytes - bytes);
+            UpdatedAtUtc = DateTime.UtcNow;
+        }
+
         private StorageQuota() { }
     }
 }

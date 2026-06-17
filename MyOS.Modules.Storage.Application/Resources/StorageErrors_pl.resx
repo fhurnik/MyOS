@@ -61,4 +61,25 @@
   <data name="QuotaErrors.NotFound" xml:space="preserve">
     <value>Nie znaleziono limitu pamięci.</value>
   </data>
+  <data name="QuotaErrors.InsufficientSpace" xml:space="preserve">
+    <value>Za mało miejsca, aby wykonać tę operację.</value>
+  </data>
+  <data name="FileErrors.NotFound" xml:space="preserve">
+    <value>Nie znaleziono pliku.</value>
+  </data>
+  <data name="FileErrors.Forbidden" xml:space="preserve">
+    <value>Nie masz uprawnień do tego pliku.</value>
+  </data>
+  <data name="FileErrors.TypeNotAllowed" xml:space="preserve">
+    <value>Ten typ pliku jest niedozwolony.</value>
+  </data>
+  <data name="FileErrors.ContentMismatch" xml:space="preserve">
+    <value>Zawartość pliku nie odpowiada jego rozszerzeniu.</value>
+  </data>
+  <data name="FileErrors.PhysicalFileMissing" xml:space="preserve">
+    <value>Nie znaleziono pliku na serwerze.</value>
+  </data>
+  <data name="FileErrors.InlineNotAllowed" xml:space="preserve">
+    <value>Tego typu pliku nie można wyświetlić w przeglądarce; pobierz go zamiast tego.</value>
+  </data>
 </root>

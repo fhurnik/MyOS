@@ -61,4 +61,25 @@
   <data name="QuotaErrors.NotFound" xml:space="preserve">
     <value>Storage quota not found.</value>
   </data>
+  <data name="QuotaErrors.InsufficientSpace" xml:space="preserve">
+    <value>Not enough storage space to complete this operation.</value>
+  </data>
+  <data name="FileErrors.NotFound" xml:space="preserve">
+    <value>File not found.</value>
+  </data>
+  <data name="FileErrors.Forbidden" xml:space="preserve">
+    <value>You do not have permission to access this file.</value>
+  </data>
+  <data name="FileErrors.TypeNotAllowed" xml:space="preserve">
+    <value>This file type is not allowed.</value>
+  </data>
+  <data name="FileErrors.ContentMismatch" xml:space="preserve">
+    <value>The file content does not match its extension.</value>
+  </data>
+  <data name="FileErrors.PhysicalFileMissing" xml:space="preserve">
+    <value>The file could not be found on the server.</value>
+  </data>
+  <data name="FileErrors.InlineNotAllowed" xml:space="preserve">
+    <value>This file type cannot be viewed inline; download it instead.</value>
+  </data>
 </root>

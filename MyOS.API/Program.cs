@@ -6,6 +6,7 @@ using MyOS.API.Middlewares;
 using MyOS.Core.Infrastructure.Extensions;
 using MyOS.Core.Infrastructure.Logging;
 using MyOS.Identity.Infrastructure;
+using Microsoft.AspNetCore.Http.Features;
 using MyOS.Modules.Notes.Infrastructure;
 using MyOS.Modules.Storage.Infrastructure;
 using Serilog;
@@ -23,6 +24,11 @@ builder.Services.AddCore(builder.Configuration);
 builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddNotesModule(builder.Configuration);
 builder.Services.AddStorageModule(builder.Configuration);
+
+// Upload limits — max size of a single uploaded file (storage module).
+const long maxUploadBytes = 1L * 1024 * 1024 * 1024; // 1 GB
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = maxUploadBytes);
+builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = maxUploadBytes);
 
 builder.Services.AddApiVersioning(options =>
 {
