@@ -22,5 +22,14 @@ namespace MyOS.Modules.Storage.Infrastructure.Repositories
             await dbContext.Set<StoredFile>()
                 .Where(f => f.FolderId != null && folderIds.Contains(f.FolderId.Value) && f.DeletedAtUtc == null)
                 .ToListAsync(cancellationToken);
+
+        public async Task<IReadOnlyList<StoredFile>> GetSoftDeletedBeforeAsync(
+            DateTime cutoffUtc, CancellationToken cancellationToken) =>
+            await dbContext.Set<StoredFile>()
+                .Where(f => f.DeletedAtUtc != null && f.DeletedAtUtc < cutoffUtc)
+                .ToListAsync(cancellationToken);
+
+        public void RemoveRange(IReadOnlyCollection<StoredFile> files) =>
+            dbContext.Set<StoredFile>().RemoveRange(files);
     }
 }

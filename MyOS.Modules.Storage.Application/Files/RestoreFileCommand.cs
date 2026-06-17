@@ -6,6 +6,7 @@ using MyOS.Core.Application.Abstractions.Results;
 using MyOS.Modules.Storage.Application.Errors;
 using MyOS.Modules.Storage.Application.Files.BusinesRules;
 using MyOS.Modules.Storage.Domain.Files;
+using MyOS.Modules.Storage.Domain.Folders;
 using MyOS.Modules.Storage.Domain.Quotas;
 
 namespace MyOS.Modules.Storage.Application.Files
@@ -14,6 +15,7 @@ namespace MyOS.Modules.Storage.Application.Files
 
     internal sealed class RestoreFileCommandHandler(
         IStoredFileRepository fileRepository,
+        IFolderRepository folderRepository,
         IStorageQuotaRepository quotaRepository,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork) : ICommandHandler<RestoreFileCommand, Unit>
@@ -36,6 +38,15 @@ namespace MyOS.Modules.Storage.Application.Files
 
             if (check.IsFailure)
                 return Result<Unit>.Failure(check.Error);
+
+            // If the file's folder was removed while it sat in the trash, restore it to the root
+            // so it doesn't end up orphaned inside a deleted folder.
+            if (file.FolderId is not null)
+            {
+                var folder = await folderRepository.GetByIdAsync(file.FolderId.Value, cancellationToken);
+                if (folder is null)
+                    file.MoveTo(null);
+            }
 
             file.Restore();
             quota!.Consume(file.SizeBytes);

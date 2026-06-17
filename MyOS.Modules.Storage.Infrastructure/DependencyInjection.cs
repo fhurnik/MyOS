@@ -32,6 +32,8 @@ namespace MyOS.Modules.Storage.Infrastructure
             services.AddScoped<IFileStorage, LocalFileStorage>();
             services.AddSingleton<IFileSignatureValidator, FileSignatureValidator>();
 
+            services.AddHostedService<StorageCleanupBackgroundService>();
+
             services.AddStorageApplication();
 
             return services;
