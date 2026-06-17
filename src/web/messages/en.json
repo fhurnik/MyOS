@@ -25,7 +25,11 @@
       "password": "Password",
       "submit": "Sign in",
       "noAccount": "Don't have an account?",
-      "registerLink": "Register"
+      "registerLink": "Register",
+      "validation": {
+        "emailInvalid": "Valid email required",
+        "passwordRequired": "Password required"
+      }
     },
     "register": {
       "title": "Create your account",
@@ -35,7 +39,13 @@
       "password": "Password",
       "submit": "Create account",
       "hasAccount": "Already have an account?",
-      "loginLink": "Sign in"
+      "loginLink": "Sign in",
+      "validation": {
+        "firstNameRequired": "First name required",
+        "lastNameRequired": "Last name required",
+        "emailInvalid": "Valid email required",
+        "passwordMinLength": "Minimum 8 characters"
+      }
     },
     "language": {
       "english": "English",

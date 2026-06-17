@@ -1,10 +1,11 @@
 "use client"
 
+import { useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { loginSchema, type LoginFormValues } from "@/modules/identity/schemas/login.schema"
+import { createLoginSchema, type LoginFormValues } from "@/modules/identity/schemas/login.schema"
 import { useLogin } from "@/modules/identity/hooks/useLogin"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -17,12 +18,20 @@ export function LoginForm() {
   const t = useTranslations("identity.login")
   const { mutate: login, isPending, error } = useLogin()
 
+  const schema = useMemo(
+    () => createLoginSchema({
+      emailInvalid: t("validation.emailInvalid"),
+      passwordRequired: t("validation.passwordRequired"),
+    }),
+    [t]
+  )
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(schema),
   })
 
   const onSubmit = (values: LoginFormValues) => login(values)

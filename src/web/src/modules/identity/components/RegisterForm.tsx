@@ -1,10 +1,11 @@
 "use client"
 
+import { useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { registerSchema, type RegisterFormValues } from "@/modules/identity/schemas/register.schema"
+import { createRegisterSchema, type RegisterFormValues } from "@/modules/identity/schemas/register.schema"
 import { useRegister } from "@/modules/identity/hooks/useRegister"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -16,12 +17,22 @@ export function RegisterForm() {
   const t = useTranslations("identity.register")
   const { mutate: register, isPending, error } = useRegister()
 
+  const schema = useMemo(
+    () => createRegisterSchema({
+      firstNameRequired: t("validation.firstNameRequired"),
+      lastNameRequired: t("validation.lastNameRequired"),
+      emailInvalid: t("validation.emailInvalid"),
+      passwordMinLength: t("validation.passwordMinLength"),
+    }),
+    [t]
+  )
+
   const {
     register: field,
     handleSubmit,
     formState: { errors },
   } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(schema),
   })
 
   const onSubmit = (values: RegisterFormValues) => register(values)

@@ -1,8 +1,15 @@
 import { z } from "zod"
 
-export const loginSchema = z.object({
-  email: z.string().email("Valid email required"),
-  password: z.string().min(1, "Password required"),
-})
+export interface LoginSchemaErrors {
+  emailInvalid: string
+  passwordRequired: string
+}
 
-export type LoginFormValues = z.infer<typeof loginSchema>
+export function createLoginSchema(errors: LoginSchemaErrors) {
+  return z.object({
+    email: z.string().email(errors.emailInvalid),
+    password: z.string().min(1, errors.passwordRequired),
+  })
+}
+
+export type LoginFormValues = z.infer<ReturnType<typeof createLoginSchema>>
