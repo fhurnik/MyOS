@@ -14,6 +14,7 @@
 		<ProjectReference Include="..\MyOS.Core.Infrastructure\MyOS.Core.Infrastructure.csproj" />
 		<ProjectReference Include="..\MyOS.Identity.Infrastructure\MyOS.Identity.Infrastructure.csproj" />
 		<ProjectReference Include="..\MyOS.Modules.Notes.Infrastructure\MyOS.Modules.Notes.Infrastructure.csproj" />
+			<ProjectReference Include="..\MyOS.Modules.Storage.Infrastructure\MyOS.Modules.Storage.Infrastructure.csproj" />
 	</ItemGroup>
 
 </Project>

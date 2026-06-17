@@ -23,6 +23,7 @@
     <ProjectReference Include="..\MyOS.Core.Domain\MyOS.Core.Domain.csproj" />
     <ProjectReference Include="..\MyOS.Identity.Application\MyOS.Identity.Application.csproj" />
     <ProjectReference Include="..\MyOS.Modules.Notes.Application\MyOS.Modules.Notes.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Storage.Application\MyOS.Modules.Storage.Application.csproj" />
   </ItemGroup>
 
 </Project>

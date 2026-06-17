@@ -1,8 +1,10 @@
 using FluentValidation;
+using MediatR;
 using MyOS.Core.Application.Abstractions;
 using MyOS.Core.Application.Abstractions.BusinessRules;
 using MyOS.Core.Application.Abstractions.Messaging;
 using MyOS.Core.Application.Abstractions.Results;
+using MyOS.Core.Application.DomainEvents;
 using MyOS.Core.Application.Exceptions;
 using MyOS.Core.Domain.Enums;
 using MyOS.Identity.Application.Abstractions;
@@ -34,6 +36,7 @@ namespace MyOS.Identity.Application.Commands.Register
     internal sealed class RegisterCommandHandler(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
+        IPublisher publisher,
         IUnitOfWork unitOfWork) : ICommandHandler<RegisterCommand, Guid>
     {
         public async Task<Result<Guid>> Handle(RegisterCommand command, CancellationToken cancellationToken)
@@ -48,6 +51,10 @@ namespace MyOS.Identity.Application.Commands.Register
             var user = User.Create(command.FirstName, command.LastName, command.Email, passwordHash, command.Language);
 
             await userRepository.AddAsync(user, cancellationToken);
+
+            // In-process domain event — handlers (e.g. Storage quota creation) stage their changes
+            // into the same DbContext; the single SaveChanges below commits everything atomically.
+            await publisher.Publish(new UserRegisteredEvent(user.Id), cancellationToken);
 
             try
             {

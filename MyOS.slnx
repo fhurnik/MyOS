@@ -14,6 +14,11 @@
     <Project Path="MyOS.Modules.Notes.Domain/MyOS.Modules.Notes.Domain.csproj" />
     <Project Path="MyOS.Modules.Notes.Infrastructure/MyOS.Modules.Notes.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Storage/">
+    <Project Path="MyOS.Modules.Storage.Application/MyOS.Modules.Storage.Application.csproj" />
+    <Project Path="MyOS.Modules.Storage.Domain/MyOS.Modules.Storage.Domain.csproj" />
+    <Project Path="MyOS.Modules.Storage.Infrastructure/MyOS.Modules.Storage.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".env" />
     <File Path=".env.example" />

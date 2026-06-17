@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyOS.Core.Infrastructure\MyOS.Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Storage.Application\MyOS.Modules.Storage.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Storage.Domain\MyOS.Modules.Storage.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

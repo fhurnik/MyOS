@@ -3,6 +3,7 @@ using MyOS.Core.Application.Abstractions.Results;
 using MyOS.Core.Application.Resources;
 using MyOS.Identity.Application.Resources;
 using MyOS.Modules.Notes.Application.Resources;
+using MyOS.Modules.Storage.Application.Resources;
 using System.Reflection;
 
 namespace MyOS.Tests.Translation
@@ -13,14 +14,16 @@ namespace MyOS.Tests.Translation
         [
             typeof(CoreErrorMessageProvider).Assembly,
             typeof(IdentityErrorMessageProvider).Assembly,
-            typeof(NotesErrorMessageProvider).Assembly
+            typeof(NotesErrorMessageProvider).Assembly,
+            typeof(StorageErrorMessageProvider).Assembly
         ];
 
         public static readonly IErrorMessageProvider[] Providers =
         [
             new CoreErrorMessageProvider(),
             new IdentityErrorMessageProvider(),
-            new NotesErrorMessageProvider()
+            new NotesErrorMessageProvider(),
+            new StorageErrorMessageProvider()
         ];
 
         public static IEnumerable<(Assembly Assembly, string ResourceName)> ResourceManifests =>

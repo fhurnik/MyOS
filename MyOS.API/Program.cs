@@ -7,6 +7,7 @@ using MyOS.Core.Infrastructure.Extensions;
 using MyOS.Core.Infrastructure.Logging;
 using MyOS.Identity.Infrastructure;
 using MyOS.Modules.Notes.Infrastructure;
+using MyOS.Modules.Storage.Infrastructure;
 using Serilog;
 
 DotNetEnv.Env.Load();
@@ -21,6 +22,7 @@ builder.Host.UseSerilog((_, loggerConfiguration) =>
 builder.Services.AddCore(builder.Configuration);
 builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddNotesModule(builder.Configuration);
+builder.Services.AddStorageModule(builder.Configuration);
 
 builder.Services.AddApiVersioning(options =>
 {
