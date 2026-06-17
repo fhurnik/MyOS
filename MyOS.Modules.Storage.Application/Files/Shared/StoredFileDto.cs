@@ -3,6 +3,7 @@ namespace MyOS.Modules.Storage.Application.Files.Shared
     public sealed record StoredFileDto
     {
         public Guid Id { get; init; }
+        public Guid? FolderId { get; init; }
         public string OriginalName { get; init; } = string.Empty;
         public string Extension { get; init; } = string.Empty;
         public string ContentType { get; init; } = string.Empty;

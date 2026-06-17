@@ -82,4 +82,16 @@
   <data name="FileErrors.InlineNotAllowed" xml:space="preserve">
     <value>Tego typu pliku nie można wyświetlić w przeglądarce; pobierz go zamiast tego.</value>
   </data>
+  <data name="FolderErrors.NotFound" xml:space="preserve">
+    <value>Nie znaleziono folderu.</value>
+  </data>
+  <data name="FolderErrors.Forbidden" xml:space="preserve">
+    <value>Nie masz uprawnień do tego folderu.</value>
+  </data>
+  <data name="FolderErrors.ParentNotFound" xml:space="preserve">
+    <value>Docelowy folder nadrzędny nie istnieje.</value>
+  </data>
+  <data name="FolderErrors.CircularReference" xml:space="preserve">
+    <value>Nie można przenieść folderu do samego siebie ani do swojego podfolderu.</value>
+  </data>
 </root>

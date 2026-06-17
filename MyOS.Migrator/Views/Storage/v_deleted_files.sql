@@ -3,6 +3,7 @@ AS
 SELECT
     id,
     user_id,
+    folder_id,
     storage_file_name,
     original_name,
     extension,

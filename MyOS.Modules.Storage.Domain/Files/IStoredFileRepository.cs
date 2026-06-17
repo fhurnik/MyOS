@@ -5,5 +5,7 @@ namespace MyOS.Modules.Storage.Domain.Files
         Task AddAsync(StoredFile file, CancellationToken cancellationToken);
         Task<StoredFile?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
         Task<StoredFile?> GetDeletedByIdAsync(Guid id, CancellationToken cancellationToken);
+        Task<IReadOnlyList<StoredFile>> GetActiveByFolderIdsAsync(
+            IReadOnlyCollection<Guid> folderIds, CancellationToken cancellationToken);
     }
 }

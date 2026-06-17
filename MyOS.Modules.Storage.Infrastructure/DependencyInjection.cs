@@ -5,6 +5,7 @@ using MyOS.Modules.Storage.Application.Abstractions;
 using MyOS.Modules.Storage.Application.Extensions;
 using MyOS.Modules.Storage.Domain.AllowedFileTypes;
 using MyOS.Modules.Storage.Domain.Files;
+using MyOS.Modules.Storage.Domain.Folders;
 using MyOS.Modules.Storage.Domain.Quotas;
 using MyOS.Modules.Storage.Infrastructure.EntityConfigurations.Quotas;
 using MyOS.Modules.Storage.Infrastructure.Repositories;
@@ -26,6 +27,7 @@ namespace MyOS.Modules.Storage.Infrastructure
             services.AddScoped<IStorageQuotaRepository, StorageQuotaRepository>();
             services.AddScoped<IStoredFileRepository, StoredFileRepository>();
             services.AddScoped<IAllowedFileTypeRepository, AllowedFileTypeRepository>();
+            services.AddScoped<IFolderRepository, FolderRepository>();
 
             services.AddScoped<IFileStorage, LocalFileStorage>();
             services.AddSingleton<IFileSignatureValidator, FileSignatureValidator>();

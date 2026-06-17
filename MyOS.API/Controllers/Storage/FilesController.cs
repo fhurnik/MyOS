@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using MyOS.API.Controllers.Storage.Requests;
 using MyOS.Modules.Storage.Application.Files;
 
 namespace MyOS.API.Controllers.Storage
@@ -58,14 +59,25 @@ namespace MyOS.API.Controllers.Storage
         [HttpPost]
         public async Task<IActionResult> Upload(
             IFormFile file,
+            [FromQuery] Guid? folderId,
             CancellationToken cancellationToken)
         {
             await using var content = file.OpenReadStream();
 
             var result = await sender.Send(
-                new UploadFileCommand(content, file.FileName, file.ContentType, file.Length),
+                new UploadFileCommand(content, file.FileName, file.ContentType, file.Length, folderId),
                 cancellationToken);
 
+            return HandleResult(result);
+        }
+
+        [HttpPut("{id}/move")]
+        public async Task<IActionResult> Move(
+            Guid id,
+            [FromBody] MoveFileRequest request,
+            CancellationToken cancellationToken)
+        {
+            var result = await sender.Send(new MoveFileCommand(id, request.FolderId), cancellationToken);
             return HandleResult(result);
         }
 

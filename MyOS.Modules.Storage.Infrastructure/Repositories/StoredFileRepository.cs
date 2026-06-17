@@ -16,5 +16,11 @@ namespace MyOS.Modules.Storage.Infrastructure.Repositories
         public Task<StoredFile?> GetDeletedByIdAsync(Guid id, CancellationToken cancellationToken) =>
             dbContext.Set<StoredFile>()
                 .FirstOrDefaultAsync(f => f.Id == id && f.DeletedAtUtc != null, cancellationToken);
+
+        public async Task<IReadOnlyList<StoredFile>> GetActiveByFolderIdsAsync(
+            IReadOnlyCollection<Guid> folderIds, CancellationToken cancellationToken) =>
+            await dbContext.Set<StoredFile>()
+                .Where(f => f.FolderId != null && folderIds.Contains(f.FolderId.Value) && f.DeletedAtUtc == null)
+                .ToListAsync(cancellationToken);
     }
 }

@@ -82,4 +82,16 @@
   <data name="FileErrors.InlineNotAllowed" xml:space="preserve">
     <value>This file type cannot be viewed inline; download it instead.</value>
   </data>
+  <data name="FolderErrors.NotFound" xml:space="preserve">
+    <value>Folder not found.</value>
+  </data>
+  <data name="FolderErrors.Forbidden" xml:space="preserve">
+    <value>You do not have permission to access this folder.</value>
+  </data>
+  <data name="FolderErrors.ParentNotFound" xml:space="preserve">
+    <value>The target parent folder does not exist.</value>
+  </data>
+  <data name="FolderErrors.CircularReference" xml:space="preserve">
+    <value>A folder cannot be moved into itself or one of its subfolders.</value>
+  </data>
 </root>

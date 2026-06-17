@@ -14,6 +14,7 @@ namespace MyOS.Modules.Storage.Infrastructure.EntityConfigurations.Files
 
             builder.Property(x => x.Id).HasColumnName("id");
             builder.Property(x => x.UserId).HasColumnName("user_id");
+            builder.Property(x => x.FolderId).HasColumnName("folder_id");
             builder.Property(x => x.StorageFileName).HasColumnName("storage_file_name").HasMaxLength(64);
             builder.Property(x => x.OriginalName).HasColumnName("original_name").HasMaxLength(255);
             builder.Property(x => x.Extension).HasColumnName("extension").HasMaxLength(20);

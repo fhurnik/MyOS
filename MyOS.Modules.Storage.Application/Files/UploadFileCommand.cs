@@ -8,6 +8,7 @@ using MyOS.Modules.Storage.Application.Errors;
 using MyOS.Modules.Storage.Application.Files.BusinesRules;
 using MyOS.Modules.Storage.Domain.AllowedFileTypes;
 using MyOS.Modules.Storage.Domain.Files;
+using MyOS.Modules.Storage.Domain.Folders;
 using MyOS.Modules.Storage.Domain.Quotas;
 
 namespace MyOS.Modules.Storage.Application.Files
@@ -16,7 +17,8 @@ namespace MyOS.Modules.Storage.Application.Files
         Stream Content,
         string FileName,
         string ContentType,
-        long SizeBytes) : ICommand<Guid>;
+        long SizeBytes,
+        Guid? FolderId) : ICommand<Guid>;
 
     public sealed class UploadFileCommandValidator : AbstractValidator<UploadFileCommand>
     {
@@ -37,6 +39,7 @@ namespace MyOS.Modules.Storage.Application.Files
         IStoredFileRepository fileRepository,
         IStorageQuotaRepository quotaRepository,
         IAllowedFileTypeRepository allowedFileTypeRepository,
+        IFolderRepository folderRepository,
         IFileStorage fileStorage,
         IFileSignatureValidator signatureValidator,
         ICurrentUser currentUser,
@@ -45,6 +48,13 @@ namespace MyOS.Modules.Storage.Application.Files
         public async Task<Result<Guid>> Handle(UploadFileCommand command, CancellationToken cancellationToken)
         {
             var extension = Path.GetExtension(command.FileName).TrimStart('.').ToLowerInvariant();
+
+            if (command.FolderId is not null)
+            {
+                var folder = await folderRepository.GetByIdAsync(command.FolderId.Value, cancellationToken);
+                if (folder is null || folder.UserId != currentUser.Id)
+                    return Result<Guid>.Failure(FolderErrors.ParentNotFound);
+            }
 
             var allowedType = await allowedFileTypeRepository.GetByExtensionAsync(extension, cancellationToken);
             var quota = await quotaRepository.GetByUserIdAsync(currentUser.Id, cancellationToken);
@@ -66,7 +76,7 @@ namespace MyOS.Modules.Storage.Application.Files
                 command.Content.Position = 0;
 
             var file = StoredFile.Create(
-                currentUser.Id, command.FileName, extension, allowedType!.ContentType, command.SizeBytes);
+                currentUser.Id, command.FolderId, command.FileName, extension, allowedType!.ContentType, command.SizeBytes);
 
             // Two-store write: persist bytes first, then metadata + quota in one transaction.
             // If the DB write fails, compensate by removing the orphaned file from disk.
