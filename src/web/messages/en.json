@@ -83,15 +83,61 @@
       }
     }
   },
+  "storage": {
+    "title": "Storage",
+    "folders": "Folders",
+    "files": "Files",
+    "upload": {
+      "button": "Upload",
+      "dropHint": "Drop files here to upload",
+      "rejectedType": "Unsupported file type: {files}",
+      "title": "Uploads",
+      "queued": "Queued",
+      "uploading": "Uploading",
+      "done": "Done",
+      "error": "Failed",
+      "clear": "Clear finished"
+    },
+    "preview": {
+      "action": "Preview",
+      "noPreview": "No preview available for this file type.",
+      "loadError": "Failed to load preview.",
+      "previous": "Previous",
+      "next": "Next",
+      "fullscreen": "Fullscreen"
+    },
+    "empty": "This folder is empty.",
+    "newFolder": "New folder",
+    "folderName": "Folder name",
+    "open": "Open",
+    "rename": "Rename",
+    "renameFolder": "Rename folder",
+    "moveTo": "Move to…",
+    "moveToRoot": "Storage (root)",
+    "selectFolder": "Select a destination folder",
+    "download": "Download",
+    "delete": "Delete",
+    "root": "Storage",
+    "quotaUsed": "{used} of {total} used",
+    "deleteFileConfirm": "Delete this file?",
+    "deleteFolderConfirm": "Delete this folder?",
+    "deleteFolderWarning": "All subfolders and files inside will also be deleted. This action cannot be undone.",
+    "validation": {
+      "nameRequired": "Folder name is required"
+    }
+  },
   "navigation": {
     "home": "Home",
     "notes": "Notes",
     "textNotes": "Text Notes",
     "checkLists": "Check Lists",
+    "storage": "Storage",
     "settings": "Settings",
     "learning": "Learning",
     "finance": "Finance",
     "fitness": "Fitness",
+    "modules": "Modules",
+    "soon": "soon",
     "logout": "Sign out"
   },
   "home": {
@@ -116,6 +162,18 @@
       "title": "Language",
       "description": "Choose the language for the interface"
     },
-    "account": "Account"
+    "account": "Account",
+    "allowedFileTypes": {
+      "title": "Allowed file types",
+      "description": "File types you can upload to Storage.",
+      "categories": {
+        "document": "Documents",
+        "text": "Text",
+        "image": "Images",
+        "audio": "Audio",
+        "video": "Video",
+        "archive": "Archives"
+      }
+    }
   }
 }

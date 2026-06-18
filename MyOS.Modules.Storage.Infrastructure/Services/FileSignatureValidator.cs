@@ -29,6 +29,12 @@ namespace MyOS.Modules.Storage.Infrastructure.Services
                 ["m4a"]  = [new(4, "ftyp"u8.ToArray())],
                 ["webm"] = [new(0, [0x1A, 0x45, 0xDF, 0xA3])],
                 ["mkv"]  = [new(0, [0x1A, 0x45, 0xDF, 0xA3])],
+                ["jpg"]  = [new(0, [0xFF, 0xD8, 0xFF])],
+                ["jpeg"] = [new(0, [0xFF, 0xD8, 0xFF])],
+                ["png"]  = [new(0, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
+                ["gif"]  = [new(0, "GIF8"u8.ToArray())],
+                ["webp"] = [new(8, "WEBP"u8.ToArray())],
+                ["bmp"]  = [new(0, "BM"u8.ToArray())],
             };
 
         public async Task<bool> IsValidAsync(Stream content, string extension, CancellationToken cancellationToken)

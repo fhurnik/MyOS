@@ -10,7 +10,7 @@ const intlMiddleware = createIntlMiddleware({
 })
 
 // Path segments that require authentication (after the locale prefix)
-const PROTECTED_SEGMENTS = ["/home", "/notes", "/settings", "/learning", "/finance", "/fitness"]
+const PROTECTED_SEGMENTS = ["/home", "/notes", "/storage", "/settings", "/learning", "/finance", "/fitness"]
 
 // Public-only paths (redirect to app if already authenticated)
 const PUBLIC_AUTH_SEGMENTS = ["/login", "/register"]

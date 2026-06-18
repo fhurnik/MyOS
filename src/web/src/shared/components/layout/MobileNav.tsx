@@ -4,11 +4,23 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { Home, LogOut, Menu, X } from "lucide-react"
+import { LogOut, Menu, X } from "lucide-react"
 import { useRequiredSession } from "@/shared/hooks/useSession"
 import { cn } from "@/shared/lib/utils"
 import { Sheet, SheetContent } from "@/shared/components/ui/sheet"
-import { NOTES_SUB_LINKS, NAV_LINKS, COMING_SOON, getInitials } from "./nav-config"
+import {
+  TOP_LINKS,
+  MODULES,
+  COMING_SOON,
+  isLinkActive,
+  activeSubLinkHref,
+  getInitials,
+} from "./nav-config"
+
+const ROW = "flex items-center gap-2.5 rounded-md border-l-2 px-2 py-1.5 text-sm transition-colors"
+const SUB_ROW = "flex items-center gap-2 rounded-md border-l-2 py-1.5 pl-5 pr-2 text-sm transition-colors"
+const ACTIVE = "border-primary bg-primary/10 font-medium text-primary"
+const INACTIVE = "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
@@ -18,8 +30,6 @@ export function MobileNav() {
   const session = useRequiredSession()
 
   const locale = pathname.split("/")[1] ?? "en"
-  const isChecklistsPath = pathname.startsWith(`/${locale}/notes/checklists`)
-  const isHomePath = pathname === `/${locale}/home`
 
   async function handleLogout() {
     setOpen(false)
@@ -63,74 +73,52 @@ export function MobileNav() {
           </div>
 
           <nav className="flex flex-1 flex-col gap-0.5">
-            {/* Home */}
-            <Link
-              href={`/${locale}/home`}
-              onClick={close}
-              className={cn(
-                "flex items-center gap-2.5 rounded-md border-l-2 px-2 py-1.5 text-sm transition-colors",
-                isHomePath
-                  ? "border-primary bg-primary/10 font-medium text-primary"
-                  : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <Home className="h-4 w-4 shrink-0" />
-              {t("home")}
-            </Link>
+            {/* Top-level links: Home, Settings */}
+            {TOP_LINKS.map(({ href, labelKey, Icon }) => (
+              <Link
+                key={href}
+                href={`/${locale}${href}`}
+                onClick={close}
+                className={cn(ROW, isLinkActive(href, pathname, locale) ? ACTIVE : INACTIVE)}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {t(labelKey)}
+              </Link>
+            ))}
 
-            {/* Top-level links (Settings) */}
-            {NAV_LINKS.map(({ href, labelKey, Icon }) => {
-              const fullPath = `/${locale}${href}`
-              const isActive = pathname === fullPath || pathname.startsWith(fullPath + "/")
+            <div className="my-2 border-t" />
+
+            {/* Modules */}
+            <p className="px-2 pb-1 pt-0.5 text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
+              {t("modules")}
+            </p>
+            {MODULES.map((module) => {
+              const headerActive = module.subLinks.length === 0 && isLinkActive(module.href, pathname, locale)
+              const activeSub = activeSubLinkHref(module.subLinks, pathname, locale)
               return (
-                <Link
-                  key={href}
-                  href={fullPath}
-                  onClick={close}
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-md border-l-2 px-2 py-1.5 text-sm transition-colors",
-                    isActive
-                      ? "border-primary bg-primary/10 font-medium text-primary"
-                      : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {t(labelKey)}
-                </Link>
+                <div key={module.href}>
+                  <Link
+                    href={`/${locale}${module.href}`}
+                    onClick={close}
+                    className={cn(ROW, headerActive ? ACTIVE : INACTIVE)}
+                  >
+                    <module.Icon className="h-4 w-4 shrink-0" />
+                    {t(module.labelKey)}
+                  </Link>
+                  {module.subLinks.map(({ href, labelKey, Icon }) => (
+                    <Link
+                      key={href}
+                      href={`/${locale}${href}`}
+                      onClick={close}
+                      className={cn(SUB_ROW, activeSub === href ? ACTIVE : INACTIVE)}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      {t(labelKey)}
+                    </Link>
+                  ))}
+                </div>
               )
             })}
-
-            <div className="my-1" />
-
-            {/* Notes module with sub-links */}
-            <div>
-              <p className="px-2 pb-1 pt-0.5 text-xs font-medium uppercase tracking-wider text-muted-foreground/50">
-                {t("notes")}
-              </p>
-              {NOTES_SUB_LINKS.map(({ href, labelKey, Icon }) => {
-                const fullPath = `/${locale}${href}`
-                const isActive =
-                  href === "/notes/checklists"
-                    ? isChecklistsPath
-                    : pathname.startsWith(`/${locale}/notes`) && !isChecklistsPath
-                return (
-                  <Link
-                    key={href}
-                    href={fullPath}
-                    onClick={close}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md border-l-2 py-1.5 pl-5 pr-2 text-sm transition-colors",
-                      isActive
-                        ? "border-primary bg-primary/10 font-medium text-primary"
-                        : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5 shrink-0" />
-                    {t(labelKey)}
-                  </Link>
-                )
-              })}
-            </div>
 
             <div className="my-2 border-t" />
 
@@ -141,9 +129,7 @@ export function MobileNav() {
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="flex-1">{t(labelKey)}</span>
-                <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground/60">
-                  soon
-                </span>
+                <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground/60">{t("soon")}</span>
               </div>
             ))}
           </nav>

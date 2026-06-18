@@ -83,15 +83,61 @@
       }
     }
   },
+  "storage": {
+    "title": "Dysk",
+    "folders": "Foldery",
+    "files": "Pliki",
+    "upload": {
+      "button": "Wgraj",
+      "dropHint": "Upuść pliki tutaj, aby wgrać",
+      "rejectedType": "Niedozwolony typ pliku: {files}",
+      "title": "Wysyłanie",
+      "queued": "W kolejce",
+      "uploading": "Wysyłanie",
+      "done": "Gotowe",
+      "error": "Błąd",
+      "clear": "Wyczyść ukończone"
+    },
+    "preview": {
+      "action": "Podgląd",
+      "noPreview": "Brak podglądu dla tego typu pliku.",
+      "loadError": "Nie udało się wczytać podglądu.",
+      "previous": "Poprzedni",
+      "next": "Następny",
+      "fullscreen": "Pełny ekran"
+    },
+    "empty": "Ten folder jest pusty.",
+    "newFolder": "Nowy folder",
+    "folderName": "Nazwa folderu",
+    "open": "Otwórz",
+    "rename": "Zmień nazwę",
+    "renameFolder": "Zmień nazwę folderu",
+    "moveTo": "Przenieś do…",
+    "moveToRoot": "Dysk (główny)",
+    "selectFolder": "Wybierz folder docelowy",
+    "download": "Pobierz",
+    "delete": "Usuń",
+    "root": "Dysk",
+    "quotaUsed": "{used} z {total}",
+    "deleteFileConfirm": "Usunąć ten plik?",
+    "deleteFolderConfirm": "Usunąć ten folder?",
+    "deleteFolderWarning": "Wszystkie podfoldery i pliki w środku również zostaną usunięte. Tej operacji nie można cofnąć.",
+    "validation": {
+      "nameRequired": "Nazwa folderu jest wymagana"
+    }
+  },
   "navigation": {
     "home": "Strona główna",
     "notes": "Notatki",
     "textNotes": "Notatki tekstowe",
     "checkLists": "Listy zadań",
+    "storage": "Dysk",
     "settings": "Ustawienia",
     "learning": "Nauka",
     "finance": "Finanse",
     "fitness": "Fitness",
+    "modules": "Moduły",
+    "soon": "wkrótce",
     "logout": "Wyloguj"
   },
   "home": {
@@ -116,6 +162,18 @@
       "title": "Język",
       "description": "Wybierz język interfejsu"
     },
-    "account": "Konto"
+    "account": "Konto",
+    "allowedFileTypes": {
+      "title": "Dozwolone typy plików",
+      "description": "Typy plików, które możesz wgrać na Dysk.",
+      "categories": {
+        "document": "Dokumenty",
+        "text": "Tekst",
+        "image": "Obrazy",
+        "audio": "Audio",
+        "video": "Wideo",
+        "archive": "Archiwa"
+      }
+    }
   }
 }

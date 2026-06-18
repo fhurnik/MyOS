@@ -1,9 +1,11 @@
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
-import { FileText, GraduationCap, Wallet, Dumbbell, ChevronRight } from "lucide-react"
+import { FileText, HardDrive, GraduationCap, Wallet, Dumbbell, ChevronRight } from "lucide-react"
 import { getServerSession, getServerToken } from "@/shared/lib/session"
 import { getTextNotesApi } from "@/modules/notes/api/text-notes.api"
 import { getCheckListsApi } from "@/modules/notes/api/check-lists.api"
+import { getQuotaApi } from "@/modules/storage/api/storage.api"
+import { formatBytes } from "@/shared/lib/format"
 import { TextNoteCard } from "@/modules/notes/components/text-notes/TextNoteCard"
 import type { TextNoteDto } from "@/modules/notes/types/notes.types"
 import type { ReactNode } from "react"
@@ -81,14 +83,16 @@ export default async function HomePage({ params }: Props) {
   const token = await getServerToken()
   const username = session?.email.split("@")[0] ?? ""
 
-  const [notesData, checkListsData] = await Promise.all([
+  const [notesData, checkListsData, quota] = await Promise.all([
     getTextNotesApi({ pageSize: 3 }, token ?? undefined),
     getCheckListsApi({ pageSize: 1 }, token ?? undefined),
+    getQuotaApi(token ?? undefined),
   ])
 
   const notesTotal = notesData.totalCount
   const listsTotal = checkListsData.totalCount
   const notesDescription = `${t("notesCount", { count: notesTotal })} · ${t("checkListsCount", { count: listsTotal })}`
+  const storageDescription = `${formatBytes(quota.usedBytes)} / ${formatBytes(quota.maxBytes)}`
 
   return (
     <div className="space-y-8">
@@ -111,6 +115,12 @@ export default async function HomePage({ params }: Props) {
             icon={<FileText className="h-5 w-5" />}
             title={tNav("notes")}
             description={notesDescription}
+          />
+          <ActiveModuleCard
+            href={`/${locale}/storage`}
+            icon={<HardDrive className="h-5 w-5" />}
+            title={tNav("storage")}
+            description={storageDescription}
           />
           <ComingSoonCard
             icon={<GraduationCap className="h-5 w-5" />}

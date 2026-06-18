@@ -1,7 +1,7 @@
 # CLAUDE.md — MyOS Frontend
 
 > Single source of truth for AI assistants working on `src/web/`.
-> Last verified: 2026-06-08.
+> Last verified: 2026-06-18.
 
 ---
 
@@ -43,8 +43,11 @@
 - Add per-mutation `onError` handlers for generic backend error display — `MutationCache.onError` in `query-client.ts` already shows a `toast.error` for every failed mutation; add `onError` only when mutation-specific logic is needed
 - Write Zod schemas with hardcoded error strings — schemas that power forms use factory functions accepting a plain error object (`{ titleRequired: string, ... }`); the component calls `t()` and passes the translated strings to the factory
 - Wrap `BreadcrumbLink` (or use `AppBreadcrumbs`) in a Server Component — `BreadcrumbLink` uses `useRender` from `@base-ui/react` and requires `"use client"`
-- Add nav links directly to `Sidebar.tsx` — add them to `src/shared/components/layout/nav-config.ts` instead; both desktop Sidebar and mobile MobileNav drawer import from there
+- Add nav links directly to `Sidebar.tsx` — add them to `src/shared/components/layout/nav-config.ts` instead (the `MODULES` array, each with optional `subLinks`); both desktop Sidebar and mobile MobileNav drawer import from there
 - Use `h-[calc(100vh-...)]` for full-height pages — use `h-[calc(100dvh-var(--mobile-header-h)-2rem)] md:h-[calc(100dvh-3rem)]` so the mobile header is accounted for (`--mobile-header-h: 3.5rem` is defined in globals.css `:root`)
+- Render a base-ui `Button` as a link (`render={<a/>}`) without `nativeButton={false}` — base-ui assumes a native `<button>` and warns/strips semantics otherwise
+- Use `apiClient` for binary responses — it parses JSON; for raw file bytes use `fetch` + `response.blob()` (see `fetchFileBlob` in the storage module)
+- Assume every list endpoint is paginated — some (e.g. Storage folders/files) return a full `IReadOnlyList`; fetch all and filter client-side instead of using `PaginatedList`
 
 ---
 
@@ -69,7 +72,7 @@ src/web/
 ├── next.config.ts              ← next-intl plugin + rewrites (proxy /api/v* to backend)
 ├── components.json             ← shadcn config — aliases point to @/shared/
 ├── messages/
-│   ├── en.json                 ← keys: common, identity, notes, navigation, settings
+│   ├── en.json                 ← keys: common, identity, notes, storage, navigation, settings
 │   └── pl.json
 └── src/
     ├── proxy.ts                ← auth guard + token refresh + Authorization injection
@@ -89,9 +92,10 @@ src/web/
     │       │   ├── login/
     │       │   └── register/
     │       └── (app)/          ← auth-guarded (proxy.ts enforces)
-    │           ├── layout.tsx  ← SessionProvider + Sidebar layout (re-renders on each (app) entry)
+    │           ├── layout.tsx  ← SessionProvider + UploadProvider (global upload) + Sidebar layout
     │           ├── home/
     │           ├── notes/
+    │           ├── storage/    ← explorer (folders/files), upload, preview
     │           ├── settings/
     │           ├── learning/   ← stub
     │           ├── finance/    ← stub
@@ -103,7 +107,7 @@ src/web/
     │   │   ├── components/     ← LoginForm.tsx, RegisterForm.tsx
     │   │   ├── schemas/        ← login.schema.ts, register.schema.ts
     │   │   └── types/          ← identity.types.ts
-    │   └── notes/
+    │   ├── notes/
     │       ├── api/            ← text-notes.api.ts, check-lists.api.ts
     │       ├── hooks/
     │       │   ├── text-notes/ ← useTextNotes, useTextNote, useCreate/Update/DeleteTextNote
@@ -113,11 +117,19 @@ src/web/
     │       │   └── check-lists/
     │       ├── schemas/
     │       └── types/          ← notes.types.ts
+    │   └── storage/
+    │       ├── api/            ← files.api.ts, folders.api.ts, storage.api.ts (quota, allowed types)
+    │       ├── hooks/          ← useFiles/useFolders/useQuota/useAllowedFileTypes + mutation hooks
+    │       ├── components/     ← StorageExplorer, tiles/, preview/FilePreviewModal, settings/
+    │       ├── upload/         ← UploadProvider (global, XHR+progress), UploadPanel, StorageDropZone
+    │       ├── lib/            ← file-icon.ts, folder-tree.ts
+    │       ├── schemas/        ← folder.schema.ts
+    │       └── types/          ← storage.types.ts
     └── shared/
         ├── lib/
         │   ├── api-client.ts   ← single fetch wrapper; empty base URL client-side
         │   ├── api-error.ts    ← ApiError class from ProblemDetails
-        │   ├── format.ts       ← formatDate(iso) — shared date formatting
+        │   ├── format.ts       ← formatDate(iso), formatBytes(bytes) — shared formatting
         │   ├── paging.ts       ← buildPagingParams(PagingRequest) → query string
         │   ├── session.ts      ← getServerSession(), getServerToken() — server only
         │   ├── language.ts     ← Language enum ↔ locale string map
@@ -128,11 +140,11 @@ src/web/
         │   ├── common.types.ts ← Language, SUPPORTED_LOCALES, DEFAULT_LOCALE
         │   └── tanstack.d.ts   ← TanStack Query type augmentation (mutationMeta.suppressToast)
         ├── components/
-        │   ├── ui/             ← shadcn copies: button, input, label, card, alert, separator, dialog, breadcrumb, sonner, sheet
+        │   ├── ui/             ← shadcn copies: button, input, label, card, alert, separator, dialog, dropdown-menu, breadcrumb, sonner, sheet
         │   │   ├── confirm-dialog.tsx  ← reusable delete confirmation modal (wraps Dialog)
         │   │   └── paginated-list.tsx  ← generic PaginatedList<T>; list mode (renderItem) or table mode (columns); sort, row click, row actions
         │   └── layout/
-        │       ├── nav-config.ts       ← only file to change when adding a new module nav link
+        │       ├── nav-config.ts       ← TOP_LINKS + MODULES (icon+name, optional subLinks); only file to change for nav
         │       ├── Sidebar.tsx         ← desktop sidebar (hidden md:flex); imports nav links from nav-config.ts
         │       ├── MobileNav.tsx       ← Sheet drawer for mobile navigation; imports from nav-config.ts
         │       ├── MobileHeader.tsx    ← top bar shown on mobile (<md); contains MobileNav
@@ -197,7 +209,7 @@ NODE_TLS_REJECT_UNAUTHORIZED=0    # dev only — Node.js ignores OS cert store f
 
 ## Auth Guard — proxy.ts
 
-Protected path segments (after locale prefix): `/home`, `/notes`, `/settings`, `/learning`, `/finance`, `/fitness`
+Protected path segments (after locale prefix): `/home`, `/notes`, `/storage`, `/settings`, `/learning`, `/finance`, `/fitness`
 
 Logic on each request to a protected path:
 1. Valid `access_token` cookie → continue
@@ -429,5 +441,5 @@ When a new backend module is ready (Finance, Fitness, Learning):
 5. Create `src/modules/{name}/components/` — React components
 6. Create `src/app/[locale]/(app)/{name}/page.tsx` (and sub-routes)
 7. Add translation keys to `messages/en.json` and `messages/pl.json`
-8. Add nav link arrays in `src/shared/components/layout/nav-config.ts` — **only file to touch in shared** (both desktop Sidebar and mobile MobileNav drawer import from it)
-9. Add to proxy.ts `PROTECTED_SEGMENTS` if the route name differs from module name
+8. Add an entry to the `MODULES` array in `src/shared/components/layout/nav-config.ts` (icon + name, optional `subLinks`) — **only file to touch in shared**; both desktop Sidebar and mobile MobileNav drawer import from it
+9. Add the route segment to `proxy.ts` `PROTECTED_SEGMENTS`
