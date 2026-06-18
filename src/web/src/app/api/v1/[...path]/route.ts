@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import * as https from "node:https"
 import * as http from "node:http"
+import type { IncomingMessage } from "node:http"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5042"
 
@@ -12,12 +13,31 @@ const devHttpsAgent =
     ? new https.Agent({ rejectUnauthorized: false })
     : undefined
 
+// Hop-by-hop headers must not be forwarded; the rest (incl. Accept-Ranges, Content-Range,
+// Content-Length, Content-Disposition) are passed through so range requests / downloads work.
+const HOP_BY_HOP = new Set([
+  "connection",
+  "keep-alive",
+  "transfer-encoding",
+  "te",
+  "trailer",
+  "upgrade",
+  "proxy-authenticate",
+  "proxy-authorization",
+])
+
+interface BackendResponse {
+  status: number
+  headers: Headers
+  body: ReadableStream<Uint8Array> | null
+}
+
 function nodeRequest(
   url: URL,
   method: string,
   headers: Record<string, string>,
   body?: ArrayBuffer
-): Promise<Response> {
+): Promise<BackendResponse> {
   return new Promise((resolve, reject) => {
     const isHttps = url.protocol === "https:"
     const mod = isHttps ? https : http
@@ -32,24 +52,41 @@ function nodeRequest(
         headers,
         agent,
       },
-      (res) => {
-        const chunks: Buffer[] = []
-        res.on("data", (chunk: Buffer) => chunks.push(chunk))
-        res.on("end", () => {
-          const status = res.statusCode ?? 200
-          const resHeaders = new Headers()
-          for (const [k, v] of Object.entries(res.headers)) {
-            if (v) resHeaders.set(k, Array.isArray(v) ? v.join(", ") : v)
-          }
-          const isNullBody = [204, 205, 304].includes(status)
-          resolve(
-            new Response(isNullBody ? null : Buffer.concat(chunks), {
-              status,
-              headers: resHeaders,
+      (res: IncomingMessage) => {
+        const status = res.statusCode ?? 200
+
+        const resHeaders = new Headers()
+        for (const [k, v] of Object.entries(res.headers)) {
+          if (!v || HOP_BY_HOP.has(k.toLowerCase())) continue
+          resHeaders.set(k, Array.isArray(v) ? v.join(", ") : v)
+        }
+
+        if ([204, 205, 304].includes(status)) {
+          res.resume() // drain
+          resolve({ status, headers: resHeaders, body: null })
+          return
+        }
+
+        // Stream the response (with basic backpressure) so large media isn't buffered in memory
+        // and 206/Range responses pass through intact.
+        const stream = new ReadableStream<Uint8Array>({
+          start(controller) {
+            res.on("data", (chunk: Buffer) => {
+              controller.enqueue(new Uint8Array(chunk))
+              if (controller.desiredSize !== null && controller.desiredSize <= 0) res.pause()
             })
-          )
+            res.on("end", () => controller.close())
+            res.on("error", (err) => controller.error(err))
+          },
+          pull() {
+            res.resume()
+          },
+          cancel() {
+            res.destroy()
+          },
         })
-        res.on("error", reject)
+
+        resolve({ status, headers: resHeaders, body: stream })
       }
     )
 
@@ -72,24 +109,20 @@ async function proxyToBackend(request: NextRequest, path: string[]): Promise<Nex
   if (accessToken) headers["authorization"] = `Bearer ${accessToken}`
   const acceptLanguage = request.headers.get("accept-language")
   if (acceptLanguage) headers["accept-language"] = acceptLanguage
+  // Forward range headers so audio/video seeking and resumable downloads work.
+  const range = request.headers.get("range")
+  if (range) headers["range"] = range
+  const ifRange = request.headers.get("if-range")
+  if (ifRange) headers["if-range"] = ifRange
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD"
   const body = hasBody ? await request.arrayBuffer() : undefined
 
   const response = await nodeRequest(targetUrl, request.method, headers, body)
 
-  if (response.status === 204) {
-    return new NextResponse(null, { status: 204 })
-  }
-
-  const responseBody = await response.arrayBuffer()
-  const responseHeaders = new Headers()
-  const responseContentType = response.headers.get("content-type")
-  if (responseContentType) responseHeaders.set("content-type", responseContentType)
-
-  return new NextResponse(responseBody, {
+  return new NextResponse(response.body, {
     status: response.status,
-    headers: responseHeaders,
+    headers: response.headers,
   })
 }
 
