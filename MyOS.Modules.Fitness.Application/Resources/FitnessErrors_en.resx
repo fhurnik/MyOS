@@ -67,4 +67,25 @@
   <data name="ExerciseErrors.ActivityTypeMismatch" xml:space="preserve">
     <value>The exercise type does not match the requested operation.</value>
   </data>
+  <data name="ExerciseErrors.InUse" xml:space="preserve">
+    <value>This exercise is already used in a workout and can no longer be changed.</value>
+  </data>
+  <data name="WorkoutErrors.NotFound" xml:space="preserve">
+    <value>Workout not found.</value>
+  </data>
+  <data name="WorkoutErrors.Forbidden" xml:space="preserve">
+    <value>You do not have permission to access this workout.</value>
+  </data>
+  <data name="WorkoutErrors.ExerciseNotFound" xml:space="preserve">
+    <value>The selected exercise does not exist.</value>
+  </data>
+  <data name="WorkoutErrors.WorkoutExerciseNotFound" xml:space="preserve">
+    <value>Exercise entry not found in this workout.</value>
+  </data>
+  <data name="WorkoutErrors.SetNotFound" xml:space="preserve">
+    <value>Set not found.</value>
+  </data>
+  <data name="WorkoutErrors.ActivityTypeMismatch" xml:space="preserve">
+    <value>The provided data does not match the exercise type.</value>
+  </data>
 </root>

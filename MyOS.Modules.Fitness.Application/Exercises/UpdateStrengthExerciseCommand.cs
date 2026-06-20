@@ -1,10 +1,13 @@
 using FluentValidation;
 using MediatR;
 using MyOS.Core.Application.Abstractions;
+using MyOS.Core.Application.Abstractions.BusinessRules;
 using MyOS.Core.Application.Abstractions.Messaging;
 using MyOS.Core.Application.Abstractions.Results;
 using MyOS.Modules.Fitness.Application.Errors;
+using MyOS.Modules.Fitness.Application.Exercises.BusinesRules;
 using MyOS.Modules.Fitness.Domain.Exercises;
+using MyOS.Modules.Fitness.Domain.Workouts;
 
 namespace MyOS.Modules.Fitness.Application.Exercises
 {
@@ -21,6 +24,7 @@ namespace MyOS.Modules.Fitness.Application.Exercises
 
     internal sealed class UpdateStrengthExerciseCommandHandler(
         IExerciseRepository exerciseRepository,
+        IWorkoutRepository workoutRepository,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork) : ICommandHandler<UpdateStrengthExerciseCommand, Unit>
     {
@@ -39,10 +43,17 @@ namespace MyOS.Modules.Fitness.Application.Exercises
 
             strength.Rename(command.Name);
 
-            // StrengthCategory is locked once the exercise is used in a workout — that rule is
-            // enforced from Etap 2 (when IWorkoutRepository exists). Apply only on actual change.
+            // StrengthCategory is locked once the exercise is used in any workout — check only on actual change.
             if (strength.StrengthCategory != command.Category)
+            {
+                var check = await BusinessRuleChecker.CheckAsync(cancellationToken,
+                    new ExerciseMustNotBeInUseRule(workoutRepository, strength.Id));
+
+                if (check.IsFailure)
+                    return Result<Unit>.Failure(check.Error);
+
                 strength.ChangeCategory(command.Category);
+            }
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 

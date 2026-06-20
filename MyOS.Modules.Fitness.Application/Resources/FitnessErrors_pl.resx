@@ -67,4 +67,25 @@
   <data name="ExerciseErrors.ActivityTypeMismatch" xml:space="preserve">
     <value>Typ ćwiczenia nie zgadza się z żądaną operacją.</value>
   </data>
+  <data name="ExerciseErrors.InUse" xml:space="preserve">
+    <value>To ćwiczenie jest już użyte w treningu i nie można go zmienić.</value>
+  </data>
+  <data name="WorkoutErrors.NotFound" xml:space="preserve">
+    <value>Nie znaleziono treningu.</value>
+  </data>
+  <data name="WorkoutErrors.Forbidden" xml:space="preserve">
+    <value>Nie masz uprawnień do tego treningu.</value>
+  </data>
+  <data name="WorkoutErrors.ExerciseNotFound" xml:space="preserve">
+    <value>Wybrane ćwiczenie nie istnieje.</value>
+  </data>
+  <data name="WorkoutErrors.WorkoutExerciseNotFound" xml:space="preserve">
+    <value>Nie znaleziono wpisu ćwiczenia w tym treningu.</value>
+  </data>
+  <data name="WorkoutErrors.SetNotFound" xml:space="preserve">
+    <value>Nie znaleziono serii.</value>
+  </data>
+  <data name="WorkoutErrors.ActivityTypeMismatch" xml:space="preserve">
+    <value>Przekazane dane nie zgadzają się z typem ćwiczenia.</value>
+  </data>
 </root>

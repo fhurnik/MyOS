@@ -1,10 +1,13 @@
 using FluentValidation;
 using MediatR;
 using MyOS.Core.Application.Abstractions;
+using MyOS.Core.Application.Abstractions.BusinessRules;
 using MyOS.Core.Application.Abstractions.Messaging;
 using MyOS.Core.Application.Abstractions.Results;
 using MyOS.Modules.Fitness.Application.Errors;
+using MyOS.Modules.Fitness.Application.Exercises.BusinesRules;
 using MyOS.Modules.Fitness.Domain.Exercises;
+using MyOS.Modules.Fitness.Domain.Workouts;
 
 namespace MyOS.Modules.Fitness.Application.Exercises
 {
@@ -21,6 +24,7 @@ namespace MyOS.Modules.Fitness.Application.Exercises
 
     internal sealed class UpdateCardioExerciseCommandHandler(
         IExerciseRepository exerciseRepository,
+        IWorkoutRepository workoutRepository,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork) : ICommandHandler<UpdateCardioExerciseCommand, Unit>
     {
@@ -39,10 +43,17 @@ namespace MyOS.Modules.Fitness.Application.Exercises
 
             cardio.Rename(command.Name);
 
-            // Distance is locked once the exercise is used in a workout — that rule is enforced
-            // from Etap 2 (when IWorkoutRepository exists). Apply only on actual change.
+            // Distance is locked once the exercise is used in any workout — check only on actual change.
             if (cardio.Distance != command.Distance)
+            {
+                var check = await BusinessRuleChecker.CheckAsync(cancellationToken,
+                    new ExerciseMustNotBeInUseRule(workoutRepository, cardio.Id));
+
+                if (check.IsFailure)
+                    return Result<Unit>.Failure(check.Error);
+
                 cardio.ChangeDistance(command.Distance);
+            }
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 

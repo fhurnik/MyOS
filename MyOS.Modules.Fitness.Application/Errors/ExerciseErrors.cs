@@ -15,5 +15,8 @@ namespace MyOS.Modules.Fitness.Application.Errors
 
         public static readonly Error ActivityTypeMismatch =
             Error.Validation("ExerciseErrors.ActivityTypeMismatch");
+
+        public static readonly Error InUse =
+            Error.Conflict("ExerciseErrors.InUse");
     }
 }
