@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>MyOS.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyOS.Core.Application\MyOS.Core.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Fitness.Domain\MyOS.Modules.Fitness.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\FitnessErrors_en.resx" />
+    <EmbeddedResource Update="Resources\FitnessErrors_pl.resx" />
+  </ItemGroup>
+
+</Project>

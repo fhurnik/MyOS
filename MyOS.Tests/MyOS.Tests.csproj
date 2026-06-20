@@ -24,6 +24,7 @@
     <ProjectReference Include="..\MyOS.Identity.Application\MyOS.Identity.Application.csproj" />
     <ProjectReference Include="..\MyOS.Modules.Notes.Application\MyOS.Modules.Notes.Application.csproj" />
     <ProjectReference Include="..\MyOS.Modules.Storage.Application\MyOS.Modules.Storage.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Fitness.Application\MyOS.Modules.Fitness.Application.csproj" />
   </ItemGroup>
 
 </Project>

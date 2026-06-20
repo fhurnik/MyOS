@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyOS.Core.Infrastructure\MyOS.Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Fitness.Application\MyOS.Modules.Fitness.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Fitness.Domain\MyOS.Modules.Fitness.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

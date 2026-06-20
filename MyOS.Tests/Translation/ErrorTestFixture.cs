@@ -4,6 +4,7 @@ using MyOS.Core.Application.Resources;
 using MyOS.Identity.Application.Resources;
 using MyOS.Modules.Notes.Application.Resources;
 using MyOS.Modules.Storage.Application.Resources;
+using MyOS.Modules.Fitness.Application.Resources;
 using System.Reflection;
 
 namespace MyOS.Tests.Translation
@@ -15,7 +16,8 @@ namespace MyOS.Tests.Translation
             typeof(CoreErrorMessageProvider).Assembly,
             typeof(IdentityErrorMessageProvider).Assembly,
             typeof(NotesErrorMessageProvider).Assembly,
-            typeof(StorageErrorMessageProvider).Assembly
+            typeof(StorageErrorMessageProvider).Assembly,
+            typeof(FitnessErrorMessageProvider).Assembly
         ];
 
         public static readonly IErrorMessageProvider[] Providers =
@@ -23,7 +25,8 @@ namespace MyOS.Tests.Translation
             new CoreErrorMessageProvider(),
             new IdentityErrorMessageProvider(),
             new NotesErrorMessageProvider(),
-            new StorageErrorMessageProvider()
+            new StorageErrorMessageProvider(),
+            new FitnessErrorMessageProvider()
         ];
 
         public static IEnumerable<(Assembly Assembly, string ResourceName)> ResourceManifests =>

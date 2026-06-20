@@ -9,7 +9,11 @@ using MyOS.Identity.Infrastructure;
 using Microsoft.AspNetCore.Http.Features;
 using MyOS.Modules.Notes.Infrastructure;
 using MyOS.Modules.Storage.Infrastructure;
+using MyOS.Modules.Fitness.Infrastructure;
 using Serilog;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 DotNetEnv.Env.Load();
 
@@ -24,6 +28,7 @@ builder.Services.AddCore(builder.Configuration);
 builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddNotesModule(builder.Configuration);
 builder.Services.AddStorageModule(builder.Configuration);
+builder.Services.AddFitnessModule(builder.Configuration);
 
 // Upload limits — max size of a single uploaded file (storage module).
 const long maxUploadBytes = 1L * 1024 * 1024 * 1024; // 1 GB
@@ -46,7 +51,10 @@ builder.Services.AddApiVersioning(options =>
     options.SubstituteApiVersionInUrl = true;
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
 var swaggerModules = typeof(Program).Assembly.GetTypes()
     .Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(ControllerBase)))
@@ -59,6 +67,20 @@ var swaggerModules = typeof(Program).Assembly.GetTypes()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    // Emit oneOf + discriminator schemas for System.Text.Json polymorphic request bodies
+    // (e.g. CreateExerciseRequest), driven entirely by the [JsonPolymorphic]/[JsonDerivedType]
+    // attributes — otherwise Swagger only shows the abstract base and clients omit the discriminator.
+    options.UseOneOfForPolymorphism();
+    options.UseAllOfForInheritance();
+    options.SelectSubTypesUsing(baseType =>
+        baseType.GetCustomAttributes<JsonDerivedTypeAttribute>().Select(a => a.DerivedType));
+    options.SelectDiscriminatorNameUsing(baseType =>
+        baseType.GetCustomAttribute<JsonPolymorphicAttribute>()?.TypeDiscriminatorPropertyName);
+    options.SelectDiscriminatorValueUsing(subType =>
+        subType.BaseType?
+            .GetCustomAttributes<JsonDerivedTypeAttribute>()
+            .FirstOrDefault(a => a.DerivedType == subType)?.TypeDiscriminator as string);
+
     foreach (var module in swaggerModules)
         options.SwaggerDoc(module!.ToLower(), new OpenApiInfo { Title = $"MyOS {module}", Version = "v1" });
 

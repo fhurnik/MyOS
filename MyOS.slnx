@@ -19,6 +19,11 @@
     <Project Path="MyOS.Modules.Storage.Domain/MyOS.Modules.Storage.Domain.csproj" />
     <Project Path="MyOS.Modules.Storage.Infrastructure/MyOS.Modules.Storage.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/Fitness/">
+    <Project Path="MyOS.Modules.Fitness.Application/MyOS.Modules.Fitness.Application.csproj" />
+    <Project Path="MyOS.Modules.Fitness.Domain/MyOS.Modules.Fitness.Domain.csproj" />
+    <Project Path="MyOS.Modules.Fitness.Infrastructure/MyOS.Modules.Fitness.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".env" />
     <File Path=".env.example" />
