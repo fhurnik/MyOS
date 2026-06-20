@@ -3,6 +3,8 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MyOS.API.Controllers.Fitness.Requests;
 using MyOS.Modules.Fitness.Application.Exercises;
+using MyOS.Modules.Fitness.Application.Stats;
+using MyOS.Modules.Fitness.Application.Targets;
 
 namespace MyOS.API.Controllers.Fitness
 {
@@ -65,6 +67,23 @@ namespace MyOS.API.Controllers.Fitness
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
             var result = await sender.Send(new DeleteExerciseCommand(id), cancellationToken);
+            return HandleResult(result);
+        }
+
+        [HttpPut("{id}/target")]
+        public async Task<IActionResult> SetTarget(
+            Guid id,
+            [FromBody] SetExerciseTargetRequest request,
+            CancellationToken cancellationToken)
+        {
+            var result = await sender.Send(new SetExerciseTargetCommand(id, request.Value), cancellationToken);
+            return HandleResult(result);
+        }
+
+        [HttpGet("{id}/progression")]
+        public async Task<IActionResult> GetProgression(Guid id, CancellationToken cancellationToken)
+        {
+            var result = await sender.Send(new GetExerciseProgressionQuery(id), cancellationToken);
             return HandleResult(result);
         }
     }
