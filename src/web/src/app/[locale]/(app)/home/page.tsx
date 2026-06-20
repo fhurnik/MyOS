@@ -5,8 +5,12 @@ import { getServerSession, getServerToken } from "@/shared/lib/session"
 import { getTextNotesApi } from "@/modules/notes/api/text-notes.api"
 import { getCheckListsApi } from "@/modules/notes/api/check-lists.api"
 import { getQuotaApi } from "@/modules/storage/api/storage.api"
+import { getDashboardApi, getWeeklySetsApi } from "@/modules/fitness/api/stats.api"
 import { formatBytes } from "@/shared/lib/format"
 import { TextNoteCard } from "@/modules/notes/components/text-notes/TextNoteCard"
+import { DashboardCards } from "@/modules/fitness/components/stats/DashboardCards"
+import { WeeklyVolumeChart } from "@/modules/fitness/components/stats/WeeklyVolumeChart"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import type { TextNoteDto } from "@/modules/notes/types/notes.types"
 import type { ReactNode } from "react"
 
@@ -78,21 +82,25 @@ export default async function HomePage({ params }: Props) {
   const { locale } = await params
   const t = await getTranslations("home")
   const tNav = await getTranslations("navigation")
+  const tFit = await getTranslations("fitness.dashboard")
 
   const session = await getServerSession()
   const token = await getServerToken()
   const username = session?.email.split("@")[0] ?? ""
 
-  const [notesData, checkListsData, quota] = await Promise.all([
+  const [notesData, checkListsData, quota, dashboard, weeklySets] = await Promise.all([
     getTextNotesApi({ pageSize: 3 }, token ?? undefined),
     getCheckListsApi({ pageSize: 1 }, token ?? undefined),
     getQuotaApi(token ?? undefined),
+    getDashboardApi(token ?? undefined),
+    getWeeklySetsApi(undefined, token ?? undefined),
   ])
 
   const notesTotal = notesData.totalCount
   const listsTotal = checkListsData.totalCount
   const notesDescription = `${t("notesCount", { count: notesTotal })} · ${t("checkListsCount", { count: listsTotal })}`
   const storageDescription = `${formatBytes(quota.usedBytes)} / ${formatBytes(quota.maxBytes)}`
+  const fitnessDescription = `${tFit("workoutsThisWeek")}: ${dashboard.workoutsThisWeek}`
 
   return (
     <div className="space-y-8">
@@ -127,16 +135,44 @@ export default async function HomePage({ params }: Props) {
             title={tNav("learning")}
             badge={t("comingSoon")}
           />
+          <ActiveModuleCard
+            href={`/${locale}/fitness/workouts`}
+            icon={<Dumbbell className="h-5 w-5" />}
+            title={tNav("fitness")}
+            description={fitnessDescription}
+          />
           <ComingSoonCard
             icon={<Wallet className="h-5 w-5" />}
             title={tNav("finance")}
             badge={t("comingSoon")}
           />
-          <ComingSoonCard
-            icon={<Dumbbell className="h-5 w-5" />}
-            title={tNav("fitness")}
-            badge={t("comingSoon")}
-          />
+        </div>
+      </section>
+
+      {/* Fitness dashboard */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+            {tNav("fitness")}
+          </h2>
+          <Link
+            href={`/${locale}/fitness/workouts`}
+            className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t("viewAll")}
+            <ChevronRight className="h-3 w-3" />
+          </Link>
+        </div>
+        <div className="space-y-4">
+          <DashboardCards data={dashboard} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">{tFit("weeklyVolume")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <WeeklyVolumeChart data={weeklySets} />
+            </CardContent>
+          </Card>
         </div>
       </section>
 

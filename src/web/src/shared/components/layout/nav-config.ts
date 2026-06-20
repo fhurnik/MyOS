@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Wallet,
   Dumbbell,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react"
 
@@ -45,12 +46,20 @@ export const MODULES: readonly NavModule[] = [
     Icon: HardDrive,
     subLinks: [],
   },
+  {
+    href: "/fitness/workouts",
+    labelKey: "fitness",
+    Icon: Dumbbell,
+    subLinks: [
+      { href: "/fitness/exercises", labelKey: "fitnessExercises", Icon: Dumbbell },
+      { href: "/fitness/workouts", labelKey: "fitnessWorkouts", Icon: CalendarDays },
+    ],
+  },
 ]
 
 export const COMING_SOON = [
   { labelKey: "learning", Icon: GraduationCap },
   { labelKey: "finance", Icon: Wallet },
-  { labelKey: "fitness", Icon: Dumbbell },
 ] as const
 
 export function isLinkActive(href: string, pathname: string, locale: string): boolean {

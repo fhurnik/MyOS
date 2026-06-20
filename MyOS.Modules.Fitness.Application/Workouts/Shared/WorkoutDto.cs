@@ -4,7 +4,7 @@ namespace MyOS.Modules.Fitness.Application.Workouts.Shared
     public sealed record WorkoutDto(
         Guid Id,
         Guid UserId,
-        DateOnly Date,
+        DateTime Date,
         string? Notes,
         IReadOnlyList<WorkoutExerciseDto> Exercises,
         DateTime CreatedAtUtc,

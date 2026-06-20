@@ -126,6 +126,127 @@
       "nameRequired": "Nazwa folderu jest wymagana"
     }
   },
+  "fitness": {
+    "dashboard": {
+      "title": "Fitness",
+      "subtitle": "Twój trening w skrócie",
+      "daysSinceLastWorkout": "Dni od ostatniego treningu",
+      "lastWorkoutDate": "Ostatni trening",
+      "workoutsThisWeek": "Treningi w tym tygodniu",
+      "setsThisWeek": "Serie w tym tygodniu",
+      "never": "Nigdy",
+      "today": "Dziś",
+      "weeklyVolume": "Tygodniowa objętość treningowa",
+      "quickLinks": "Szybkie linki",
+      "goToExercises": "Przeglądaj ćwiczenia",
+      "goToWorkouts": "Zapisz trening",
+      "empty": "Brak zapisanych treningów. Utwórz pierwszy trening, aby zobaczyć statystyki."
+    },
+    "exercises": {
+      "title": "Ćwiczenia",
+      "subtitle": "Twój katalog ćwiczeń",
+      "empty": "Brak ćwiczeń. Dodaj pierwsze ćwiczenie.",
+      "createButton": "Nowe ćwiczenie",
+      "newTitle": "Nowe ćwiczenie",
+      "editTitle": "Edytuj ćwiczenie",
+      "nameLabel": "Nazwa",
+      "typeLabel": "Typ",
+      "distanceLabel": "Dystans (m)",
+      "categoryLabel": "Kategoria",
+      "targetLabel": "Cel",
+      "setTarget": "Ustaw cel",
+      "targetValue": "Wartość celu",
+      "noTarget": "Brak ustawionego celu",
+      "deleteConfirm": "Usunąć to ćwiczenie?",
+      "lockedHint": "Dystans i kategoria są zablokowane, gdy ćwiczenie zostanie użyte w treningu.",
+      "progression": "Progresja",
+      "progressionEmpty": "Brak danych o progresji. Zapisz to ćwiczenie w treningu, aby zobaczyć postęp.",
+      "filters": {
+        "all": "Wszystkie",
+        "cardio": "Cardio",
+        "strength": "Siłowe",
+        "weighted": "Z obciążeniem",
+        "bodyweight": "Kalisteniczne"
+      },
+      "enums": {
+        "activityType": {
+          "cardio": "Cardio",
+          "strength": "Siłowe"
+        },
+        "strengthCategory": {
+          "weighted": "Z obciążeniem",
+          "bodyweight": "Kalisteniczne"
+        }
+      },
+      "validation": {
+        "nameRequired": "Nazwa jest wymagana",
+        "distancePositive": "Dystans musi być większy niż 0",
+        "categoryRequired": "Kategoria jest wymagana",
+        "targetPositive": "Cel musi być większy niż 0"
+      }
+    },
+    "workouts": {
+      "title": "Treningi",
+      "subtitle": "Twoja historia treningów",
+      "empty": "Brak treningów. Zapisz pierwszą sesję.",
+      "createButton": "Nowy trening",
+      "newTitle": "Nowy trening",
+      "editTitle": "Edytuj trening",
+      "dateLabel": "Data",
+      "notesLabel": "Notatki",
+      "notesPlaceholder": "np. dzień nóg",
+      "deleteConfirm": "Usunąć ten trening?",
+      "addExercise": "Dodaj ćwiczenie",
+      "addExerciseTitle": "Dodaj ćwiczenie do treningu",
+      "pickExercise": "Ćwiczenie",
+      "pickExercisePlaceholder": "Wybierz ćwiczenie…",
+      "noExercises": "Nie masz jeszcze ćwiczeń. Najpierw utwórz je w katalogu.",
+      "durationLabel": "Czas",
+      "durationMinutes": "Minuty",
+      "durationSeconds": "Sekundy",
+      "entryEmpty": "Brak ćwiczeń w tym treningu. Dodaj jedno, aby rozpocząć.",
+      "removeExerciseConfirm": "Usunąć to ćwiczenie z treningu?",
+      "editDuration": "Edytuj czas",
+      "inlineSetsHint": "Opcjonalnie dodaj serie teraz — możesz je też dodać później.",
+      "validation": {
+        "dateRequired": "Data jest wymagana",
+        "exerciseRequired": "Wybierz ćwiczenie",
+        "durationPositive": "Czas musi być większy niż 0"
+      }
+    },
+    "sets": {
+      "title": "Serie",
+      "add": "Dodaj serię",
+      "addSet": "Dodaj serię",
+      "edit": "Edytuj serię",
+      "set": "Seria",
+      "repsLabel": "Powtórzenia",
+      "weightLabel": "Ciężar (kg)",
+      "addedWeightLabel": "Dodatkowy ciężar (kg)",
+      "negativesLabel": "Negatywy",
+      "rirLabel": "RIR",
+      "rirHint": "Powtórzenia w zapasie (0–10), opcjonalne",
+      "empty": "Brak zapisanych serii.",
+      "deleteConfirm": "Usunąć tę serię?",
+      "validation": {
+        "repsPositive": "Powtórzenia muszą być większe niż 0",
+        "weightRequired": "Ciężar jest wymagany",
+        "weightNonNegative": "Ciężar nie może być ujemny",
+        "addedWeightNonNegative": "Dodatkowy ciężar nie może być ujemny",
+        "negativesNonNegative": "Negatywy nie mogą być ujemne",
+        "rirRange": "RIR musi być w zakresie 0–10"
+      }
+    },
+    "stats": {
+      "weeklyVolume": "Tygodniowa objętość",
+      "sets": "Serie",
+      "week": "Tydzień",
+      "target": "Cel",
+      "value": "Wartość",
+      "date": "Data",
+      "noData": "Brak danych do wyświetlenia."
+    }
+  },
   "navigation": {
     "home": "Strona główna",
     "notes": "Notatki",
@@ -136,6 +257,8 @@
     "learning": "Nauka",
     "finance": "Finanse",
     "fitness": "Fitness",
+    "fitnessExercises": "Ćwiczenia",
+    "fitnessWorkouts": "Treningi",
     "modules": "Moduły",
     "soon": "wkrótce",
     "logout": "Wyloguj"

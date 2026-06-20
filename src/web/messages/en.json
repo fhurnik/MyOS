@@ -126,6 +126,127 @@
       "nameRequired": "Folder name is required"
     }
   },
+  "fitness": {
+    "dashboard": {
+      "title": "Fitness",
+      "subtitle": "Your training at a glance",
+      "daysSinceLastWorkout": "Days since last workout",
+      "lastWorkoutDate": "Last workout",
+      "workoutsThisWeek": "Workouts this week",
+      "setsThisWeek": "Sets this week",
+      "never": "Never",
+      "today": "Today",
+      "weeklyVolume": "Weekly training volume",
+      "quickLinks": "Quick links",
+      "goToExercises": "Browse exercises",
+      "goToWorkouts": "Log a workout",
+      "empty": "No workouts logged yet. Create your first workout to see stats here."
+    },
+    "exercises": {
+      "title": "Exercises",
+      "subtitle": "Your exercise catalog",
+      "empty": "No exercises yet. Add your first exercise.",
+      "createButton": "New exercise",
+      "newTitle": "New exercise",
+      "editTitle": "Edit exercise",
+      "nameLabel": "Name",
+      "typeLabel": "Type",
+      "distanceLabel": "Distance (m)",
+      "categoryLabel": "Category",
+      "targetLabel": "Target",
+      "setTarget": "Set target",
+      "targetValue": "Target value",
+      "noTarget": "No target set",
+      "deleteConfirm": "Delete this exercise?",
+      "lockedHint": "Distance and category are locked once the exercise is used in a workout.",
+      "progression": "Progression",
+      "progressionEmpty": "No progression data yet. Log this exercise in a workout to see progress.",
+      "filters": {
+        "all": "All",
+        "cardio": "Cardio",
+        "strength": "Strength",
+        "weighted": "Weighted",
+        "bodyweight": "Bodyweight"
+      },
+      "enums": {
+        "activityType": {
+          "cardio": "Cardio",
+          "strength": "Strength"
+        },
+        "strengthCategory": {
+          "weighted": "Weighted",
+          "bodyweight": "Bodyweight"
+        }
+      },
+      "validation": {
+        "nameRequired": "Name is required",
+        "distancePositive": "Distance must be greater than 0",
+        "categoryRequired": "Category is required",
+        "targetPositive": "Target must be greater than 0"
+      }
+    },
+    "workouts": {
+      "title": "Workouts",
+      "subtitle": "Your training history",
+      "empty": "No workouts yet. Log your first session.",
+      "createButton": "New workout",
+      "newTitle": "New workout",
+      "editTitle": "Edit workout",
+      "dateLabel": "Date",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "e.g. leg day",
+      "deleteConfirm": "Delete this workout?",
+      "addExercise": "Add exercise",
+      "addExerciseTitle": "Add exercise to workout",
+      "pickExercise": "Exercise",
+      "pickExercisePlaceholder": "Select an exercise…",
+      "noExercises": "You have no exercises yet. Create one in the catalog first.",
+      "durationLabel": "Duration",
+      "durationMinutes": "Minutes",
+      "durationSeconds": "Seconds",
+      "entryEmpty": "No exercises in this workout yet. Add one to start logging.",
+      "removeExerciseConfirm": "Remove this exercise from the workout?",
+      "editDuration": "Edit duration",
+      "inlineSetsHint": "Optionally add sets now — you can also add them later.",
+      "validation": {
+        "dateRequired": "Date is required",
+        "exerciseRequired": "Select an exercise",
+        "durationPositive": "Duration must be greater than 0"
+      }
+    },
+    "sets": {
+      "title": "Sets",
+      "add": "Add set",
+      "addSet": "Add set",
+      "edit": "Edit set",
+      "set": "Set",
+      "repsLabel": "Reps",
+      "weightLabel": "Weight (kg)",
+      "addedWeightLabel": "Added weight (kg)",
+      "negativesLabel": "Negatives",
+      "rirLabel": "RIR",
+      "rirHint": "Reps in reserve (0–10), optional",
+      "empty": "No sets logged yet.",
+      "deleteConfirm": "Delete this set?",
+      "validation": {
+        "repsPositive": "Reps must be greater than 0",
+        "weightRequired": "Weight is required",
+        "weightNonNegative": "Weight cannot be negative",
+        "addedWeightNonNegative": "Added weight cannot be negative",
+        "negativesNonNegative": "Negatives cannot be negative",
+        "rirRange": "RIR must be between 0 and 10"
+      }
+    },
+    "stats": {
+      "weeklyVolume": "Weekly volume",
+      "sets": "Sets",
+      "week": "Week",
+      "target": "Target",
+      "value": "Value",
+      "date": "Date",
+      "noData": "No data to display yet."
+    }
+  },
   "navigation": {
     "home": "Home",
     "notes": "Notes",
@@ -136,6 +257,8 @@
     "learning": "Learning",
     "finance": "Finance",
     "fitness": "Fitness",
+    "fitnessExercises": "Exercises",
+    "fitnessWorkouts": "Workouts",
     "modules": "Modules",
     "soon": "soon",
     "logout": "Sign out"

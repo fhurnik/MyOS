@@ -65,6 +65,9 @@ namespace MyOS.Modules.Fitness.Application.Workouts
                     entry.AddBodyweightSet(set.Reps, set.AddedWeight, set.Negatives, set.Rir);
             }
 
+            // Force the new entry + its sets to Added (see IWorkoutRepository.AddExercise).
+            workoutRepository.AddExercise(entry);
+
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Result<Guid>.Success(entry.Id);
