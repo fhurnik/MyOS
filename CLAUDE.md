@@ -44,6 +44,7 @@ Architecture follows **pragmatic DDD**, **CQRS**, and **Clean Architecture** wit
 - Add soft delete (`DeletedAtUtc`) to an entity unless that entity's lifecycle specifically requires it
 - Create error code classes as `static class` — must be `sealed class : ErrorCodes` for test discovery
 - Pass Command or Query types directly as `[FromBody]` or `[FromQuery]` in controllers — always use a separate Request record in `Controllers/{Module}/Requests/`
+- Store enum display labels in DB or `.resx`, or serialize enums as numbers on the wire — see Enums & Polymorphic Types
 
 ---
 
@@ -162,8 +163,6 @@ public interface IQueryHandler<Query, TResponse> : IRequestHandler<Query, Result
 - `query.GetPagingListAsync<T>(PagingRequest, CancellationToken)` — executes COUNT + paged SELECT, returns `Result<PagingList<T>>`
 - `PagingRequest.OrderBy` is validated against `T`'s public property names (case-insensitive only in the first character — e.g. `createdAtUtc` matches `CreatedAtUtc`, but `createdatutc` does not) before being converted to snake_case and passed to SQLKata. An unmatched column returns `Result.Failure(PagingErrors.InvalidOrderBy)` (→ 400) instead of letting SQL Server reject an invalid column name (→ 500)
 - Inject `QueryFactory db`, build query with `db.Query(...)`, chain conditions, call extension at the end — query handlers can `return await ... .GetPagingListAsync<TDto>(...)` directly since it already returns `Result<PagingList<TDto>>`
-
-**MediatR** is the mediator. Registered per-module via `AddIdentityApplication()` pattern.
 
 ---
 
@@ -593,7 +592,11 @@ public sealed record TextNoteDto(Guid Id, string Title, ...);
 ```
 `CheckListDto` (assembled manually in the handler, not by Dapper) may remain positional.
 
-**Repository `GetByIdAsync` must filter soft-deleted entities** — always include `&& e.DeletedAtUtc == null` in the predicate. Without it, mutating command handlers will operate on logically deleted records (update/delete after soft-delete silently resurrects the entity).
+**Soft-deleted entities must never surface in reads or be mutated.** Two patterns exist:
+- **Global query filter (preferred for new modules):** configure `builder.HasQueryFilter(x => x.DeletedAtUtc == null)` in the `EntityConfiguration`. EF applies it automatically to every query *and* to `Include`d navigations, so repositories need no manual predicate and aggregate graphs never load deleted children. Restore/trash flows that must see deleted rows use `.IgnoreQueryFilters()`. Used by **Fitness** (`Exercise`, `Workout` + child entities).
+- **Manual predicate (older modules — Notes, Storage, Identity):** include `&& e.DeletedAtUtc == null` in every repository predicate (e.g. `GetByIdAsync`). Functional but easy to forget; the global filter is preferred going forward.
+
+Either way: a mutating command handler must never operate on a logically deleted record (update/delete after soft-delete must not silently resurrect the entity). **Read side (SQLKata views) is unaffected by EF query filters** — every view still filters `WHERE deleted_at_utc IS NULL` explicitly.
 
 **Infrastructure contains:** EF Core, SQLKata, repositories, external services, background services, logging config, Serilog.
 
@@ -615,9 +618,7 @@ public sealed record TextNoteDto(Guid Id, string Title, ...);
 | Fitness | `fitness` |
 | System | `system` |
 
-**Soft delete:** use `deleted_at_utc` column when a specific entity's lifecycle requires it. Not every entity needs soft delete by default — add it explicitly when needed.
-
-**Column naming in database:** `snake_case` (e.g., `created_at_utc`, `password_hash`).
+**Column naming in database:** `snake_case` (e.g., `created_at_utc`, `password_hash`). Soft delete uses a `deleted_at_utc` column — see Domain Layer (per-entity rule) and Infrastructure (filtering).
 
 ---
 
@@ -778,6 +779,44 @@ Three tests enforce correctness at build/CI time:
 | `ResourceKeyConventionTests` | Every `.resx` key exists as a real error code (no orphans) + correct format |
 
 All tests use `ErrorTestFixture` which discovers assemblies and resource manifests via reflection — **no magic strings**.
+
+---
+
+## Enums & Polymorphic Types
+
+### Enum storage & wire format
+
+- **CLR:** enums are `byte`- or `int`-backed (`enum ActivityType : byte { Cardio = 0, Strength = 1 }`).
+- **Database:** stored as an integer column — `tinyint` for small enums (e.g. `activity_type`, `strength_category`), matching the `Language` precedent (`AsInt32`). DTOs expose the enum type directly; Dapper maps the integer column → enum.
+- **Wire:** a global `JsonStringEnumConverter(JsonNamingPolicy.CamelCase)` is registered in `Program.cs` (`AddControllers().AddJsonOptions(...)`). The API accepts and returns enums as **camelCase strings** (`"cardio"`, `"weighted"`), never numbers.
+- **Display labels:** localized on the frontend from the raw string value — never in DB lookup tables, never in `.resx`.
+
+### Polymorphic entities — Table-Per-Hierarchy (TPH)
+
+Polymorphic aggregates use EF Core **TPH** (one table + discriminator). Reference: `Fitness ... Exercise` → `CardioExercise` / `StrengthExercise`.
+
+- Map an **enum property as the discriminator** so domain code and SQLKata read the same column with no redundancy:
+  ```csharp
+  builder.HasDiscriminator(x => x.ActivityType)
+      .HasValue<CardioExercise>(ActivityType.Cardio)
+      .HasValue<StrengthExercise>(ActivityType.Strength);
+  ```
+- Base `EntityConfiguration<TBase>` maps shared columns + discriminator + query filter; one `IEntityTypeConfiguration<TDerived>` per subtype maps only that subtype's columns.
+- EF materializes the correct concrete CLR type from the discriminator, so handlers branch with `is` pattern matching (`if (exercise is not CardioExercise cardio) ...`).
+- Use TPH only when subtypes carry genuinely different data. A type that is fully derivable from a referenced entity (e.g. a set's category comes from its exercise) is a single entity with nullable columns + factory methods, not a hierarchy.
+
+### Polymorphic request bodies
+
+When a request maps to a polymorphic domain, use System.Text.Json polymorphism on an abstract Request record:
+```csharp
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "activityType")]
+[JsonDerivedType(typeof(CreateCardioExerciseRequest), "cardio")]
+[JsonDerivedType(typeof(CreateStrengthExerciseRequest), "strength")]
+public abstract record CreateExerciseRequest { public string Name { get; init; } = string.Empty; }
+```
+- The controller `switch`es on the concrete request type → a **separate command per variant** (each with a trivial validator — no nullable fields + `When()` conditional validation). MediatR dispatches by concrete type.
+- When the discriminator duplicates a server-known type (e.g. add-set under a known exercise), the handler **must verify** it matches the referenced entity and return a mismatch error otherwise.
+- **Swagger needs explicit config** or it emits only the abstract base schema (clients then omit the discriminator → STJ `NotSupportedException` → 500). In `AddSwaggerGen`: `UseOneOfForPolymorphism()` + `UseAllOfForInheritance()` + `SelectSubTypesUsing` / `SelectDiscriminatorNameUsing` / `SelectDiscriminatorValueUsing` reading the `[JsonPolymorphic]`/`[JsonDerivedType]` attributes (no magic strings; works for all polymorphic requests).
 
 ---
 
