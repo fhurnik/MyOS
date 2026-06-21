@@ -196,7 +196,6 @@ warstwach). Pełne konwencje opisuje [`CLAUDE.md`](./CLAUDE.md).
 
 - [ ] Moduł **Learning** — śledzenie nauki / kursów
 - [ ] Moduł **Finance** — zarządzanie finansami osobistymi
-- [ ] **RabbitMQ** — wzorzec Outbox dla niezawodnych zdarzeń integracyjnych + komunikacja między modułami
 - [ ] **Testy integracyjne** z Testcontainers (prawdziwy SQL Server)
 
 ---

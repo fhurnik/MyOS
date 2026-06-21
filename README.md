@@ -20,14 +20,6 @@
 your **notes**, **files**, **workouts**, and (soon) **learning** and **finance** data. It is a
 full-stack application: an ASP.NET Core (.NET 10) backend and a Next.js 16 frontend.
 
-The project serves two purposes:
-
-- **A portfolio piece** — it intentionally applies the patterns that come up in mid/senior .NET
-  interviews: a **modular monolith**, **pragmatic DDD**, **CQRS**, and **Clean Architecture**.
-  The architecture is the point, not an accident.
-- **A real, daily-use app** — the domain modules are designed around genuine day-to-day
-  workflows, not just demo screens.
-
 > 💡 The complete architectural reference (conventions, layer rules, decisions) lives in
 > [`CLAUDE.md`](./CLAUDE.md) at the repository root.
 
@@ -187,7 +179,7 @@ MyOS/
 ├── MyOS.Modules.Storage.{Domain,Application,Infrastructure}/
 ├── MyOS.Modules.Fitness.{Domain,Application,Infrastructure}/
 │
-├── MyOS.Tests/                        ← unit tests (translation & convention enforcement)
+├── MyOS.Tests/                        ← unit tests
 │
 ├── src/web/                           ← Next.js frontend (BFF, module slices)
 │
@@ -204,7 +196,6 @@ three layers). See [`CLAUDE.md`](./CLAUDE.md) for the complete conventions.
 
 - [ ] **Learning** module — study / course tracking
 - [ ] **Finance** module — personal finance tracking
-- [ ] **RabbitMQ** — Outbox pattern for reliable integration events + cross-module messaging
 - [ ] **Integration tests** with Testcontainers (real SQL Server)
 
 ---
