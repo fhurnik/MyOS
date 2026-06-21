@@ -2,6 +2,7 @@ import createIntlMiddleware from "next-intl/middleware"
 import { type NextRequest, NextResponse } from "next/server"
 import { decodeJwt } from "jose"
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from "@/shared/types/common.types"
+import { authCookieOptions, requestIsHttps } from "@/shared/lib/auth-cookies"
 
 const intlMiddleware = createIntlMiddleware({
   locales: SUPPORTED_LOCALES,
@@ -106,21 +107,13 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       }
 
       const { accessToken: newAccess, refreshToken: newRefresh } = await res.json()
-      const isProd = process.env.NODE_ENV === "production"
+      const cookieOptions = authCookieOptions(
+        requestIsHttps(request.url, request.headers.get("x-forwarded-proto"))
+      )
 
       const response = intlMiddleware(request)
-      response.cookies.set("access_token", newAccess, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: "lax",
-        path: "/",
-      })
-      response.cookies.set("refresh_token", newRefresh, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: "lax",
-        path: "/",
-      })
+      response.cookies.set("access_token", newAccess, cookieOptions)
+      response.cookies.set("refresh_token", newRefresh, cookieOptions)
       return response
     } catch {
       return redirectToLogin(request, true)

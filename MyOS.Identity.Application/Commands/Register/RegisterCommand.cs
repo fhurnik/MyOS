@@ -52,10 +52,6 @@ namespace MyOS.Identity.Application.Commands.Register
 
             await userRepository.AddAsync(user, cancellationToken);
 
-            // In-process domain event — handlers (e.g. Storage quota creation) stage their changes
-            // into the same DbContext; the single SaveChanges below commits everything atomically.
-            await publisher.Publish(new UserRegisteredEvent(user.Id), cancellationToken);
-
             try
             {
                 await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -67,6 +63,11 @@ namespace MyOS.Identity.Application.Commands.Register
                     Parameters = new Dictionary<string, string> { ["email"] = command.Email }
                 });
             }
+
+            // Published only after the user is committed: cross-module handlers (e.g. Storage quota
+            // creation) reference identity.users via a DB foreign key, so the user row must already
+            // exist before they persist their own dependent rows in their own SaveChanges.
+            await publisher.Publish(new UserRegisteredEvent(user.Id), cancellationToken);
 
             return Result<Guid>.Success(user.Id);
         }

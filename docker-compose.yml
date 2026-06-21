@@ -1,5 +1,5 @@
 services:
-   myos-sqlserver:
+  myos-sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: myos-sqlserver
 
@@ -31,7 +31,7 @@ services:
       retries: 10
       start_period: 30s
 
-   migrator:
+  migrator:
     build:
       context: .
       dockerfile: MyOS.Migrator/Dockerfile
@@ -47,5 +47,69 @@ services:
 
     command: ["dotnet", "MyOS.Migrator.dll"]
 
+  seq:
+    image: datalust/seq:latest
+    container_name: myos-seq
+
+    environment:
+      ACCEPT_EULA: "Y"
+      # First-run admin credentials (username defaults to "admin"). Log ingestion stays
+      # anonymous — only the UI requires login.
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD}
+
+    ports:
+      - "${SEQ_UI_PORT}:80"
+
+    volumes:
+      - myos-seq-data:/data
+
+  myos-api:
+    build:
+      context: .
+      dockerfile: MyOS.API/Dockerfile
+
+    container_name: myos-api
+    depends_on:
+      myos-sqlserver:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+      seq:
+        condition: service_started
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__Database: "Server=myos-sqlserver,${SQL_PORT};Database=${DB_NAME};User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
+      JwtSettings__SecretKey: ${JwtSettings__SecretKey}
+      Storage__RootPath: "/data/storage"
+      Seq__ServerUrl: "http://seq:80"
+
+    ports:
+      - "${API_PORT}:8080"
+
+    volumes:
+      - myos-storage-data:/data/storage
+
+  myos-web:
+    build:
+      context: ./src/web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "http://myos-api:8080"
+
+    container_name: myos-web
+    depends_on:
+      - myos-api
+
+    environment:
+      NODE_ENV: "production"
+      # Server-side only (route handler + proxy.ts) — reaches the API over the compose network.
+      NEXT_PUBLIC_API_URL: "http://myos-api:8080"
+
+    ports:
+      - "${WEB_PORT}:3000"
+
 volumes:
   myos-sqlserver-data:
+  myos-seq-data:
+  myos-storage-data:

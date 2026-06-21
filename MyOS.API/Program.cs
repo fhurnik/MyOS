@@ -19,9 +19,9 @@ DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog((_, loggerConfiguration) =>
+builder.Host.UseSerilog((context, loggerConfiguration) =>
 {
-    loggerConfiguration.ConfigureSerilog();
+    loggerConfiguration.ConfigureSerilog(context.Configuration["Seq:ServerUrl"]);
 });
 
 builder.Services.AddCore(builder.Configuration);

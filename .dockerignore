@@ -1,0 +1,26 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+
+# Frontend — built in its own image with its own context
+src/web/node_modules/
+src/web/.next/
+src/web/out/
+
+# VS / IDE
+.vs/
+.vscode/
+.idea/
+
+# Git & env
+.git/
+.gitignore
+.env
+.env.*
+!.env.example
+
+# Docker
+**/Dockerfile
+.dockerignore
+docker-compose*.yml

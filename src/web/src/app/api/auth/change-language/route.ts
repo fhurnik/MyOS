@@ -3,17 +3,9 @@ import { cookies } from "next/headers"
 import { decodeJwt } from "jose"
 import { changeLanguageApi } from "@/modules/identity/api/users.api"
 import { ApiError } from "@/shared/lib/api-error"
+import { authCookieOptions, requestIsHttps } from "@/shared/lib/auth-cookies"
 import type { Language } from "@/shared/types/common.types"
 import type { SessionPayload } from "@/modules/identity/types/identity.types"
-
-const isProd = process.env.NODE_ENV === "production"
-
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: isProd,
-  sameSite: "lax" as const,
-  path: "/",
-}
 
 export async function PATCH(request: Request) {
   try {
@@ -37,6 +29,10 @@ export async function PATCH(request: Request) {
       email: (payload.email as string) ?? "",
       language: parseInt((payload.language as string) ?? "0", 10) as 0 | 1,
     }
+
+    const COOKIE_OPTIONS = authCookieOptions(
+      requestIsHttps(request.url, request.headers.get("x-forwarded-proto"))
+    )
 
     const response = NextResponse.json(session)
     response.cookies.set("access_token", tokens.accessToken, COOKIE_OPTIONS)

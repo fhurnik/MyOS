@@ -100,7 +100,7 @@ export function FilePreviewModal({ files, index, categoryByExt, onIndexChange, o
   }, [file, mode, index, files.length, onIndexChange])
 
   return (
-    <Dialog open={file !== undefined} onOpenChange={(o) => { if (!o) onClose() }} dismissible={false}>
+    <Dialog open={file !== undefined} onOpenChange={(o) => { if (!o) onClose() }} disablePointerDismissal>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="truncate pr-8">{file?.originalName}</DialogTitle>

@@ -123,7 +123,9 @@ export function ExerciseFormDialog({ open, onOpenChange, exercise }: ExerciseFor
     if (!isPending) onOpenChange(value)
   }
 
-  const errorFor = (key: keyof ExerciseFormValues) =>
+  // ExerciseFormValues is a discriminated union, so keyof only yields keys common to every
+  // variant. The error map is keyed by every possible field, so accept any string key.
+  const errorFor = (key: string) =>
     (errors as Record<string, { message?: string }>)[key]?.message
 
   return (
