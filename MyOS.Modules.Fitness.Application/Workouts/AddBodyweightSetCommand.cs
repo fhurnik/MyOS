@@ -47,6 +47,10 @@ namespace MyOS.Modules.Fitness.Application.Workouts
                 return Result<Guid>.Failure(WorkoutErrors.ActivityTypeMismatch);
 
             var set = entry.AddBodyweightSet(command.Reps, command.AddedWeight, command.Negatives, command.Rir);
+
+            // Track the new set as Added explicitly (see IWorkoutRepository.AddSet).
+            workoutRepository.AddSet(set);
+
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Result<Guid>.Success(set.Id);

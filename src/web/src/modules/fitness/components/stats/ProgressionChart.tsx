@@ -51,7 +51,7 @@ export function ProgressionChart({ exercise, progression }: ProgressionChartProp
   }
 
   return (
-    <ChartContainer config={config} className="aspect-video w-full">
+    <ChartContainer config={config} className="aspect-auto h-[220px] w-full sm:h-[260px]">
       <LineChart data={points} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
         <CartesianGrid vertical={false} />
         <XAxis

@@ -53,7 +53,7 @@ export function WeeklyVolumeChart({ data }: WeeklyVolumeChartProps) {
   }
 
   return (
-    <ChartContainer config={config} className="aspect-video w-full">
+    <ChartContainer config={config} className="aspect-auto h-[220px] w-full sm:h-[260px]">
       <BarChart data={bars} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="week" tickLine={false} axisLine={false} tickMargin={8} minTickGap={16} />

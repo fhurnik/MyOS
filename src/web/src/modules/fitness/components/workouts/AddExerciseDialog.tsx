@@ -5,6 +5,12 @@ import { useTranslations } from "next-intl"
 import { Plus, Trash2 } from "lucide-react"
 import { useExercises } from "@/modules/fitness/hooks/exercises/useExercises"
 import { useWorkoutEntryMutations } from "@/modules/fitness/hooks/workouts/useWorkoutEntryMutations"
+import {
+  DurationFields,
+  emptyDuration,
+  partsToSeconds,
+  type DurationParts,
+} from "./DurationFields"
 import type {
   ExerciseDto,
   InlineSet,
@@ -49,8 +55,7 @@ export function AddExerciseDialog({ open, onOpenChange, workoutId }: AddExercise
   const { addExercise } = useWorkoutEntryMutations(workoutId)
 
   const [exerciseId, setExerciseId] = useState("")
-  const [minutes, setMinutes] = useState(0)
-  const [seconds, setSeconds] = useState(0)
+  const [duration, setDuration] = useState<DurationParts>(emptyDuration)
   const [rows, setRows] = useState<SetRow[]>([])
   const [error, setError] = useState<string | null>(null)
 
@@ -62,8 +67,7 @@ export function AddExerciseDialog({ open, onOpenChange, workoutId }: AddExercise
   useEffect(() => {
     if (open) {
       setExerciseId("")
-      setMinutes(0)
-      setSeconds(0)
+      setDuration(emptyDuration)
       setRows([])
       setError(null)
     }
@@ -71,13 +75,12 @@ export function AddExerciseDialog({ open, onOpenChange, workoutId }: AddExercise
 
   // Reset the type-specific inputs when the selected exercise changes.
   useEffect(() => {
-    setMinutes(0)
-    setSeconds(0)
+    setDuration(emptyDuration)
     setRows([])
     setError(null)
   }, [exerciseId])
 
-  const totalSeconds = minutes * 60 + seconds
+  const totalSeconds = partsToSeconds(duration)
   const isCardio = selected?.activityType === "cardio"
   const isStrength = selected?.activityType === "strength"
   const isWeighted = selected?.strengthCategory === "weighted"
@@ -139,7 +142,7 @@ export function AddExerciseDialog({ open, onOpenChange, workoutId }: AddExercise
 
   return (
     <Dialog open={open} onOpenChange={(v) => !addExercise.isPending && onOpenChange(v)}>
-      <DialogContent className="max-h-[85dvh] overflow-y-auto">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("addExerciseTitle")}</DialogTitle>
         </DialogHeader>
@@ -170,28 +173,9 @@ export function AddExerciseDialog({ open, onOpenChange, workoutId }: AddExercise
 
           {/* Cardio: duration */}
           {isCardio && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="add-duration-min">{t("durationMinutes")}</Label>
-                <Input
-                  id="add-duration-min"
-                  type="number"
-                  min={0}
-                  value={minutes}
-                  onChange={(e) => setMinutes(Math.max(0, Number(e.target.value) || 0))}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="add-duration-sec">{t("durationSeconds")}</Label>
-                <Input
-                  id="add-duration-sec"
-                  type="number"
-                  min={0}
-                  max={59}
-                  value={seconds}
-                  onChange={(e) => setSeconds(Math.min(59, Math.max(0, Number(e.target.value) || 0)))}
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label>{t("durationLabel")}</Label>
+              <DurationFields value={duration} onChange={setDuration} idPrefix="add-duration" />
             </div>
           )}
 
@@ -213,56 +197,66 @@ export function AddExerciseDialog({ open, onOpenChange, workoutId }: AddExercise
               <p className="text-xs text-muted-foreground">{t("inlineSetsHint")}</p>
 
               {rows.map((row, i) => (
-                <div key={i} className="flex flex-wrap items-end gap-2 rounded-lg border p-2">
-                  <div className="w-16 space-y-1">
+                <div key={i} className="flex flex-wrap items-end gap-3 rounded-lg border p-3">
+                  <div className="w-20 space-y-1">
                     <Label className="text-xs">{tSets("repsLabel")}</Label>
                     <Input
                       type="number"
                       min={1}
+                      inputMode="numeric"
+                      placeholder="0"
                       value={row.reps}
                       onChange={(e) => updateRow(i, { reps: e.target.value })}
                     />
                   </div>
                   {isWeighted ? (
-                    <div className="w-20 space-y-1">
+                    <div className="min-w-28 flex-1 space-y-1">
                       <Label className="text-xs">{tSets("weightLabel")}</Label>
                       <Input
                         type="number"
                         min={0}
                         step="0.5"
+                        inputMode="decimal"
+                        placeholder="0"
                         value={row.weight}
                         onChange={(e) => updateRow(i, { weight: e.target.value })}
                       />
                     </div>
                   ) : (
                     <>
-                      <div className="w-20 space-y-1">
+                      <div className="min-w-28 flex-1 space-y-1">
                         <Label className="text-xs">{tSets("addedWeightLabel")}</Label>
                         <Input
                           type="number"
                           min={0}
                           step="0.5"
+                          inputMode="decimal"
+                          placeholder="0"
                           value={row.addedWeight}
                           onChange={(e) => updateRow(i, { addedWeight: e.target.value })}
                         />
                       </div>
-                      <div className="w-16 space-y-1">
+                      <div className="w-24 space-y-1">
                         <Label className="text-xs">{tSets("negativesLabel")}</Label>
                         <Input
                           type="number"
                           min={0}
+                          inputMode="numeric"
+                          placeholder="0"
                           value={row.negatives}
                           onChange={(e) => updateRow(i, { negatives: e.target.value })}
                         />
                       </div>
                     </>
                   )}
-                  <div className="w-14 space-y-1">
+                  <div className="w-20 space-y-1">
                     <Label className="text-xs">{tSets("rirLabel")}</Label>
                     <Input
                       type="number"
                       min={0}
                       max={10}
+                      inputMode="numeric"
+                      placeholder="—"
                       value={row.rir}
                       onChange={(e) => updateRow(i, { rir: e.target.value })}
                     />
@@ -270,7 +264,7 @@ export function AddExerciseDialog({ open, onOpenChange, workoutId }: AddExercise
                   <button
                     type="button"
                     onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="rounded p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    className="mb-0.5 rounded p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

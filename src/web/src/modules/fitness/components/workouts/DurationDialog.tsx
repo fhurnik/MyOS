@@ -4,6 +4,12 @@ import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { useWorkoutEntryMutations } from "@/modules/fitness/hooks/workouts/useWorkoutEntryMutations"
 import {
+  DurationFields,
+  durationToParts,
+  partsToSeconds,
+  type DurationParts,
+} from "./DurationFields"
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -11,8 +17,6 @@ import {
   DialogFooter,
 } from "@/shared/components/ui/dialog"
 import { Button } from "@/shared/components/ui/button"
-import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
 
 interface DurationDialogProps {
   open: boolean
@@ -33,18 +37,13 @@ export function DurationDialog({
   const tCommon = useTranslations("common")
   const { updateDuration } = useWorkoutEntryMutations(workoutId)
 
-  const [minutes, setMinutes] = useState(0)
-  const [seconds, setSeconds] = useState(0)
+  const [parts, setParts] = useState<DurationParts>(durationToParts(currentDuration))
 
   useEffect(() => {
-    if (open) {
-      const total = currentDuration ?? 0
-      setMinutes(Math.floor(total / 60))
-      setSeconds(total % 60)
-    }
+    if (open) setParts(durationToParts(currentDuration))
   }, [open, currentDuration])
 
-  const totalSeconds = minutes * 60 + seconds
+  const totalSeconds = partsToSeconds(parts)
 
   function onSubmit() {
     if (totalSeconds <= 0) return
@@ -60,33 +59,7 @@ export function DurationDialog({
         <DialogHeader>
           <DialogTitle>{t("editDuration")}</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="duration-min">{t("durationMinutes")}</Label>
-            <Input
-              id="duration-min"
-              type="number"
-              min={0}
-              step={1}
-              value={minutes}
-              onChange={(e) => setMinutes(Math.max(0, Number(e.target.value) || 0))}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="duration-sec">{t("durationSeconds")}</Label>
-            <Input
-              id="duration-sec"
-              type="number"
-              min={0}
-              max={59}
-              step={1}
-              value={seconds}
-              onChange={(e) =>
-                setSeconds(Math.min(59, Math.max(0, Number(e.target.value) || 0)))
-              }
-            />
-          </div>
-        </div>
+        <DurationFields value={parts} onChange={setParts} idPrefix="edit-duration" />
         {totalSeconds <= 0 && (
           <p className="text-sm text-destructive">{t("validation.durationPositive")}</p>
         )}

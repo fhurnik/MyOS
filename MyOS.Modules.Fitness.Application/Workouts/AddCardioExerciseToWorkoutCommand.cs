@@ -43,6 +43,10 @@ namespace MyOS.Modules.Fitness.Application.Workouts
                 return Result<Guid>.Failure(WorkoutErrors.ActivityTypeMismatch);
 
             var entry = workout.AddCardioExercise(command.ExerciseId, command.Duration);
+
+            // Track the new entry as Added explicitly (see IWorkoutRepository.AddExercise).
+            workoutRepository.AddExercise(entry);
+
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Result<Guid>.Success(entry.Id);

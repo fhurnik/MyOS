@@ -108,7 +108,7 @@ export function ExerciseDetail({ id, initialExercise, initialProgression }: Exer
       <SetTargetDialog
         open={targetOpen}
         onOpenChange={setTargetOpen}
-        exerciseId={id}
+        exercise={exercise}
         currentValue={targetValue}
       />
       <ConfirmDialog
