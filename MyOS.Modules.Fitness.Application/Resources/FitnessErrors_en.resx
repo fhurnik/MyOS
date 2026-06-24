@@ -88,4 +88,10 @@
   <data name="WorkoutErrors.ActivityTypeMismatch" xml:space="preserve">
     <value>The provided data does not match the exercise type.</value>
   </data>
+  <data name="WorkoutErrors.ExerciseAlreadyInWorkout" xml:space="preserve">
+    <value>This exercise is already in the workout.</value>
+  </data>
+  <data name="WorkoutErrors.LastSetCannotBeRemoved" xml:space="preserve">
+    <value>A strength exercise must keep at least one set; remove the whole exercise instead.</value>
+  </data>
 </root>

@@ -4,4 +4,8 @@
     <ProjectReference Include="..\MyOS.Core.Domain\MyOS.Core.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="MyOS.UnitTests" />
+  </ItemGroup>
+
 </Project>

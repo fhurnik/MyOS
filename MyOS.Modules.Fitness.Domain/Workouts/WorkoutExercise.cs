@@ -62,6 +62,8 @@ namespace MyOS.Modules.Fitness.Domain.Workouts
         internal ExerciseSet? FindSet(Guid setId) =>
             _sets.FirstOrDefault(s => s.Id == setId && s.DeletedAtUtc is null);
 
+        internal int ActiveSetCount => _sets.Count(s => s.DeletedAtUtc is null);
+
         internal bool RemoveSet(Guid setId)
         {
             var set = FindSet(setId);

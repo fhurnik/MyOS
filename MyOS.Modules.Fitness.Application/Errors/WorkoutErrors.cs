@@ -24,5 +24,11 @@ namespace MyOS.Modules.Fitness.Application.Errors
 
         public static readonly Error ActivityTypeMismatch =
             Error.Validation("WorkoutErrors.ActivityTypeMismatch");
+
+        public static readonly Error ExerciseAlreadyInWorkout =
+            Error.Conflict("WorkoutErrors.ExerciseAlreadyInWorkout");
+
+        public static readonly Error LastSetCannotBeRemoved =
+            Error.Conflict("WorkoutErrors.LastSetCannotBeRemoved");
     }
 }

@@ -60,6 +60,9 @@ namespace MyOS.Modules.Fitness.Domain.Workouts
             return entry;
         }
 
+        internal bool ContainsExercise(Guid exerciseId) =>
+            _exercises.Any(e => e.ExerciseId == exerciseId && e.DeletedAtUtc is null);
+
         internal WorkoutExercise? FindExercise(Guid workoutExerciseId) =>
             _exercises.FirstOrDefault(e => e.Id == workoutExerciseId && e.DeletedAtUtc is null);
 

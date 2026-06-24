@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="MyOS.Modules.Notes.Application" />
+    <InternalsVisibleTo Include="MyOS.UnitTests" />
   </ItemGroup>
 
 </Project>

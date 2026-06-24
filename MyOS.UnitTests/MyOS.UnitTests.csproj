@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="Shouldly" Version="4.3.0" />
+    <PackageReference Include="NSubstitute" Version="5.3.0" />
+    <PackageReference Include="NSubstitute.Analyzers.CSharp" Version="1.0.17">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Shouldly" />
+    <Using Include="NSubstitute" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyOS.Core.Application\MyOS.Core.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Core.Domain\MyOS.Core.Domain.csproj" />
+    <ProjectReference Include="..\MyOS.Identity.Application\MyOS.Identity.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Identity.Domain\MyOS.Identity.Domain.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Notes.Application\MyOS.Modules.Notes.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Notes.Domain\MyOS.Modules.Notes.Domain.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Storage.Application\MyOS.Modules.Storage.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Storage.Domain\MyOS.Modules.Storage.Domain.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Fitness.Application\MyOS.Modules.Fitness.Application.csproj" />
+    <ProjectReference Include="..\MyOS.Modules.Fitness.Domain\MyOS.Modules.Fitness.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

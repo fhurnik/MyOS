@@ -45,6 +45,7 @@ Architecture follows **pragmatic DDD**, **CQRS**, and **Clean Architecture** wit
 - Create error code classes as `static class` — must be `sealed class : ErrorCodes` for test discovery
 - Pass Command or Query types directly as `[FromBody]` or `[FromQuery]` in controllers — always use a separate Request record in `Controllers/{Module}/Requests/`
 - Store enum display labels in DB or `.resx`, or serialize enums as numbers on the wire — see Enums & Polymorphic Types
+- Ship a new command handler or business rule without its mandated tests — see Testing Policy (definition of done)
 
 ---
 
@@ -937,24 +938,80 @@ All projects via `Directory.Build.props`: `net10.0`, nullable enable, implicit u
 
 ---
 
-## Testing
+## Testing Policy
 
-| Type | Tool | Purpose |
-|---|---|---|
-| Unit | xUnit | Translation completeness, error code conventions (`MyOS.Tests`) |
-| Integration | xUnit + Testcontainers | API endpoints with real SQL Server |
-| Architecture | ArchUnitNET or NetArchTest | Layer boundary enforcement |
+### Guiding principle
 
-**`MyOS.Tests/Translation/`:**
-- `TranslationCompletenessTests` — all error codes have translations for all languages
-- `ErrorCodeConventionTests` — `Error.Code` matches `"{ClassName}.{FieldName}"`
-- `ResourceKeyConventionTests` — no orphaned `.resx` keys, correct format
+**Test the decisions, not the plumbing.** A unit is worth testing when it makes a decision
+based on input or state — a branch (`if`), a loop, a computation, a boundary condition. Code
+that only copies fields, delegates to a framework, or maps 1:1 is not tested. Second check:
+if a bug there would be caught by the compiler or another test, don't write the test.
 
-Rules:
-- Tests must be deterministic, isolated, not dependent on local machine state
-- Integration tests use Testcontainers (real SQL Server in Docker)
-- No mocking the database in integration tests
-- When adding a new error code, the translation tests in CI will catch missing `.resx` entries
+### Test projects
+
+| Project | Layer | Tool | What it covers |
+|---|---|---|---|
+| `MyOS.UnitTests` | Domain + Application | xUnit + Shouldly + NSubstitute | Entity/value-object/business-rule behavior; **command** handler branches |
+| `MyOS.ArchitectureTests` | cross-cutting | xUnit + NetArchTest | Layer-dependency + module-isolation rules |
+| `MyOS.Tests` | cross-cutting | xUnit | Translation completeness + error-code/`.resx` conventions (reflection) |
+
+- `MyOS.UnitTests` mirrors the source slice structure: `Domain/{Module}/{Entity}/…Tests.cs`
+  and `Application/{Module}/{Entity}/…HandlerTests.cs`. Shared doubles live in `Common/`
+  (e.g. `FakeCurrentUser`).
+- **Stack:** assertions via **Shouldly**, mocks via **NSubstitute** (both MIT — safe for a
+  public portfolio). Do **not** add FluentAssertions (commercial license from v8) or Moq.
+- Handlers and entity mutating methods are `internal`, so each tested `*.Domain` and
+  `*.Application` project must expose `<InternalsVisibleTo Include="MyOS.UnitTests" />`
+  (Domain uses the MSBuild item form; Application uses the `AssemblyAttribute` form — match
+  the file's existing style).
+
+### What we test (mandatory — definition of done for new code)
+
+- **Domain:** every entity/value object with non-trivial behavior, and **every business rule**
+  (`IBusinessRule`) tested as a pair — one passing case, one failing case.
+- **Command handlers:** **full branch coverage** — one test per `Result.Failure` branch
+  (not-found, ownership/`Forbidden`, conflicts, mismatches, rule failures) **plus** the happy
+  path. The happy path asserts `IUnitOfWork.SaveChangesAsync` was called **exactly once**
+  (`Received(1)`); failure-branch tests assert it was **not** called (`DidNotReceive()`).
+  A handler test for a rule-failure branch only proves the rule is **wired into the flow**
+  (short-circuits, no `SaveChanges`) — it does **not** re-enumerate the rule's conditions;
+  full coverage of the rule's pass/fail cases lives in the rule's own test (above).
+- **Event handlers (`INotificationHandler`):** same bar as command handlers — tested only when
+  they make a decision (a branch/condition). A pure "create-and-save" reaction (e.g.
+  `CreateQuotaOnUserRegisteredHandler`) is plumbing and is skipped.
+- **Architecture:** the rules in `MyOS.ArchitectureTests/LayerDependencyTests.cs` (Domain free
+  of EF Core/ASP.NET, Application free of EF Core, modules independent). Keep the positive
+  control test that proves the analyzer actually inspects types.
+- **Conventions/translations:** automatic — adding a new error code is covered by `MyOS.Tests`
+  with no extra work (register the new module's provider per the checklist below).
+
+### What we deliberately do NOT test
+
+- **FluentValidation validators** — skipped, because `RuleFor(...).GreaterThan(0)` is framework
+  configuration. **Exception:** validators with non-trivial logic get a test — a custom `.Must(...)`
+  predicate, a cross-field rule, a `RuleForEach`/`ChildRules` collection shape, or a `.When(...)`
+  that encodes *conditional business logic*. A bare presence guard on an optional field
+  (`.When(x => x.Field.HasValue)`) is NOT non-trivial — it is framework plumbing and stays untested.
+- **Query handlers and the entire read side** — they build SQLKata over real SQL views and
+  cannot be meaningfully unit-tested without a database. **Consciously deferred** to future
+  integration tests (Testcontainers + real SQL Server). This is a known, accepted gap, not an
+  oversight; leave room for a `MyOS.IntegrationTests` project rather than faking the DB.
+- Trivial getters/mappers/DTO projections, EF configuration, and third-party libraries
+  (MediatR, EF, `Result<T>`).
+
+### Conventions
+
+- Test method names: `MethodOrAction_Scenario_ExpectedResult`.
+- Arrange–Act–Assert; one behavior per test.
+- Arrange builds entities through their domain factory methods (`{Entity}.Create(...)`) and
+  mutating methods — never via reflection or the EF parameterless constructor.
+- Collapse boundary tables (multiple inputs → same kind of assertion) into a single `[Theory]`
+  with `[InlineData]` rather than repeating `[Fact]`s.
+- Tests are deterministic and isolated — no dependence on local machine state, clock, or
+  network. Unit and architecture suites need **no** Docker.
+- CI (`.github/workflows/ci.yml`) restores, builds Release, and runs `dotnet test` over the
+  solution on push/PR to `master`. When integration tests are added, they run in a separate
+  job with a SQL Server service (no DB mocking in integration tests).
 
 ---
 
@@ -965,7 +1022,7 @@ Rules:
 3. Add table migrations per entity
 4. Add SQL views in `Views/{Name}/v_{name}.sql`
 5. Implement domain entities extending `Entity`, repository interfaces in Domain
-6. Add `<InternalsVisibleTo Include="MyOS.Modules.{Name}.Application" />` to Domain `.csproj` — enables Application handlers to call `internal` aggregate mutating methods cross-assembly
+6. Add `<InternalsVisibleTo Include="MyOS.Modules.{Name}.Application" />` to Domain `.csproj` — enables Application handlers to call `internal` aggregate mutating methods cross-assembly. Also add `<InternalsVisibleTo Include="MyOS.UnitTests" />` to both the Domain and Application `.csproj` so unit tests can instantiate `internal` handlers and call `internal` mutators
 7. Create `{Entity}Errors.cs` in `{Name}.Application/Errors/` — `sealed class : ErrorCodes`, private constructor, codes only (no messages), format `{ClassName}.{FieldName}`
 8. Create `{Name}Errors_en.resx` and `{Name}Errors_pl.resx` in `{Name}.Application/Resources/` with translations for every error code. Add `<EmbeddedResource Update="...">` in `.csproj` for each.
 9. Create `{Name}ErrorMessageProvider` in `{Name}.Application/Resources/` — builds `ResourceManager` from `typeof(Provider).Namespace` + language code map. Register as `services.AddSingleton<IErrorMessageProvider, {Name}ErrorMessageProvider>()` in `Add{Name}Application()`.
@@ -976,3 +1033,5 @@ Rules:
 14. Expose `Add{Name}Module(IServiceCollection, IConfiguration)` from Infrastructure DI — registers EF configs, repos, application DI
 15. Register in `Program.cs` via `builder.Services.Add{Name}Module(builder.Configuration)`
 16. Add controllers in `MyOS.API/` extending `ApiControllerBase`, with `[ApiVersion("1.0")]` and `[Authorize]` where needed
+17. Add unit tests in `MyOS.UnitTests` per the Testing Policy: every business rule (pass + fail), every command handler (each `Result.Failure` branch + happy path with single `SaveChangesAsync`), and any entity with non-trivial behavior. Reference the new module's Domain/Application projects in `MyOS.UnitTests.csproj`. (Query handlers/read side are deferred to integration tests.)
+18. Add the new module's Domain + Application assemblies to the assembly lists in `MyOS.ArchitectureTests/LayerDependencyTests.cs` (and reference the projects in `MyOS.ArchitectureTests.csproj`) so boundary rules cover it

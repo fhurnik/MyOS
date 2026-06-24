@@ -14,6 +14,7 @@ namespace MyOS.Modules.Fitness.Application.Workouts
     {
         public UpdateWorkoutCommandValidator()
         {
+            RuleFor(x => x.Date).LessThanOrEqualTo(_ => DateOnly.FromDateTime(DateTime.UtcNow));
             RuleFor(x => x.Notes).MaximumLength(2000);
         }
     }

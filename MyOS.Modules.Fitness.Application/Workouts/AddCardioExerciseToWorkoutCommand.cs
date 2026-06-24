@@ -42,6 +42,9 @@ namespace MyOS.Modules.Fitness.Application.Workouts
             if (exercise is not CardioExercise)
                 return Result<Guid>.Failure(WorkoutErrors.ActivityTypeMismatch);
 
+            if (workout.ContainsExercise(command.ExerciseId))
+                return Result<Guid>.Failure(WorkoutErrors.ExerciseAlreadyInWorkout);
+
             var entry = workout.AddCardioExercise(command.ExerciseId, command.Duration);
 
             // Track the new entry as Added explicitly (see IWorkoutRepository.AddExercise).

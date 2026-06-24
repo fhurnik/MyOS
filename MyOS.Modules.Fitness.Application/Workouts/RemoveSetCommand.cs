@@ -28,8 +28,15 @@ namespace MyOS.Modules.Fitness.Application.Workouts
             if (entry is null)
                 return Result<Unit>.Failure(WorkoutErrors.WorkoutExerciseNotFound);
 
-            if (!entry.RemoveSet(command.SetId))
+            var set = entry.FindSet(command.SetId);
+            if (set is null)
                 return Result<Unit>.Failure(WorkoutErrors.SetNotFound);
+
+            // A strength exercise must keep at least one set — remove the whole entry instead.
+            if (entry.ActiveSetCount == 1)
+                return Result<Unit>.Failure(WorkoutErrors.LastSetCannotBeRemoved);
+
+            entry.RemoveSet(command.SetId);
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
