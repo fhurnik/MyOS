@@ -1,7 +1,7 @@
 # CLAUDE.md — MyOS Frontend
 
 > Single source of truth for AI assistants working on `src/web/`.
-> Last verified: 2026-06-18.
+> Last verified: 2026-06-24.
 
 ---
 
@@ -28,8 +28,10 @@
 
 - Use `middleware.ts` — Next.js 16 uses `src/proxy.ts` with `export async function proxy` (not `middleware`)
 - Access `params` or `searchParams` synchronously — they are `Promise<…>` in Next.js 16, always `await params`
-- Call the backend directly from client-side JavaScript — client-side `apiClient` uses an empty base URL so the browser calls Next.js (same origin), which the rewrite proxies to the backend; CORS is never an issue
-- Add an `Authorization` header manually in client-side code — `proxy.ts` reads the httpOnly cookie and injects the header server-side before the rewrite forwards the request
+- Call the backend directly from client-side JavaScript — client-side `apiClient` uses an empty base URL so the browser calls Next.js (same origin), which proxies to the backend via the catch-all route handler `src/app/api/v1/[...path]/route.ts`; CORS is never an issue
+- Add an `Authorization` header manually in client-side code — the server-side proxy reads the httpOnly cookie and injects the Bearer header before forwarding to the backend (`proxy.ts` for the matcher; the `api/v1/[...path]` route handler re-reads the cookie and does the actual forward)
+- Assume `/api/v*` is forwarded by a `next.config.ts` rewrite — there is **no** rewrite; the catch-all route handler `src/app/api/v1/[...path]/route.ts` proxies every method to the backend over `node:http`, **streaming** the request body and response (range-safe). Do not reintroduce `await request.arrayBuffer()` — it buffers whole uploads in memory and OOMs on large phone files
+- Use secure-context-only browser APIs in client code (`crypto.randomUUID`, `crypto.subtle`, …) — the homelab is served over plain HTTP on the LAN, so on a phone these are `undefined` and throw, crashing the page with Next's "This page couldn't load". Use `randomId()` from `shared/lib/utils.ts` (falls back to `crypto.getRandomValues`)
 - Store JWT tokens in `localStorage` or `sessionStorage` — tokens live exclusively in httpOnly cookies set by the BFF route handlers
 - Use `@tailwind base`, `@tailwind components`, `@tailwind utilities` — Tailwind v4 is CSS-first: `@import "tailwindcss"` in globals.css
 - Use Zod's `.min(n, { message: '…' })` — Zod 4 uses `{ error: '…' }` as the key
@@ -48,6 +50,8 @@
 - Render a base-ui `Button` as a link (`render={<a/>}`) without `nativeButton={false}` — base-ui assumes a native `<button>` and warns/strips semantics otherwise
 - Use `apiClient` for binary responses — it parses JSON; for raw file bytes use `fetch` + `response.blob()` (see `fetchFileBlob` in the storage module)
 - Assume every list endpoint is paginated — some (e.g. Storage folders/files) return a full `IReadOnlyList`; fetch all and filter client-side instead of using `PaginatedList`
+- Preview a PDF in an `<iframe>` on mobile — mobile browsers (esp. Android Chrome) can't render PDF in an iframe (shows blank). Render the inline iframe `md:` only and an open-in-new-tab fallback below `md`. The backend `/content` endpoint serves **inline** only for `audio/*`, `video/*`, `application/pdf` (everything else → 400 `FileErrors.InlineNotAllowed`); `/download` is always an attachment. `fetchFileBlob` uses `/download`
+- Put a wide `<video>`/`<img>` in a modal without `max-w-full`, or remove `grid-cols-1` from `DialogContent` — the grid column must stay `minmax(0,1fr)` (Tailwind `grid-cols-1`) so children can shrink; otherwise intrinsic media width (and `truncate` titles, which set `white-space:nowrap`) push the dialog past the viewport on phones
 
 ---
 
@@ -69,7 +73,7 @@ These differ from standard Next.js training data:
 ```
 src/web/
 ├── .env.local                  ← NEXT_PUBLIC_API_URL + NODE_TLS_REJECT_UNAUTHORIZED (dev)
-├── next.config.ts              ← next-intl plugin + rewrites (proxy /api/v* to backend)
+├── next.config.ts              ← next-intl plugin + output: "standalone" only — NO rewrites (API proxying lives in app/api/v1/[...path]/route.ts)
 ├── components.json             ← shadcn config — aliases point to @/shared/
 ├── messages/
 │   ├── en.json                 ← keys: common, identity, notes, storage, navigation, settings
@@ -86,6 +90,8 @@ src/web/
     │   │   ├── login/route.ts  ← POST: calls backend, sets httpOnly cookies
     │   │   ├── logout/route.ts ← DELETE: clears cookies
     │   │   └── refresh/route.ts← POST: refreshes tokens, updates cookies
+    │   ├── api/v1/[...path]/
+    │   │   └── route.ts        ← catch-all proxy → backend (node:http; streams request body + response, range/binary-safe); reads access_token cookie
     │   └── [locale]/
     │       ├── layout.tsx      ← NextIntlClientProvider only
     │       ├── (public)/       ← no auth required
@@ -134,7 +140,7 @@ src/web/
         │   ├── session.ts      ← getServerSession(), getServerToken() — server only
         │   ├── language.ts     ← Language enum ↔ locale string map
         │   ├── query-client.ts ← TanStack Query singleton
-        │   └── utils.ts        ← cn() = clsx + tailwind-merge
+        │   └── utils.ts        ← cn() = clsx + tailwind-merge; randomId() (HTTP-safe, no secure-context crypto.randomUUID)
         ├── types/
         │   ├── api.types.ts    ← PagingList<T>, ProblemDetails, PagingRequest
         │   ├── common.types.ts ← Language, SUPPORTED_LOCALES, DEFAULT_LOCALE
@@ -166,11 +172,9 @@ src/web/
 ```
 Client Component calls apiClient("/api/v1/notes/text")
   → API_BASE = "" (client-side) → relative URL /api/v1/notes/text
-  → proxy.ts matches "/api/v(.*)"
-  → reads access_token from httpOnly cookie
-  → injects Authorization: Bearer <token> into request headers
-  → NextResponse.next() with modified headers
-  → next.config.ts rewrite: /api/v1/notes/text → https://localhost:7255/api/v1/notes/text
+  → proxy.ts matches "/api/v(.*)" → injects Authorization: Bearer <token> from cookie → NextResponse.next()
+  → request reaches catch-all route handler src/app/api/v1/[...path]/route.ts
+  → handler reads access_token cookie, forwards to NEXT_PUBLIC_API_URL via node:http (streams body + response, range-safe)
   → backend returns data
 ```
 
@@ -203,7 +207,7 @@ NEXT_PUBLIC_API_URL=https://localhost:7255
 NODE_TLS_REJECT_UNAUTHORIZED=0    # dev only — Node.js ignores OS cert store for .NET dev cert
 ```
 
-`NEXT_PUBLIC_API_URL` is used server-side only (api-client.ts, rewrites, proxy.ts refresh). Client-side code always uses relative URLs.
+`NEXT_PUBLIC_API_URL` is used server-side only (api-client.ts, the `api/v1/[...path]` proxy route handler, proxy.ts refresh). Client-side code always uses relative URLs.
 
 ---
 
@@ -227,7 +231,7 @@ API paths (`/api/v…`): inject Authorization header only — no redirect logic.
 `src/shared/lib/api-client.ts`:
 
 - **Server-side** (`typeof window === 'undefined'`): `API_BASE = NEXT_PUBLIC_API_URL` — full URL, include `token` param explicitly
-- **Client-side**: `API_BASE = ""` — relative URL, middleware injects auth header, rewrite forwards to backend
+- **Client-side**: `API_BASE = ""` — relative URL; `proxy.ts` injects the auth header and the `api/v1/[...path]` route handler forwards to the backend
 - Throws `ApiError` (from `api-error.ts`) on non-2xx responses
 - Returns `undefined` for 204 responses
 - All API functions in `modules/{name}/api/` accept optional `token?: string` for server-side use

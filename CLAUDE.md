@@ -46,6 +46,7 @@ Architecture follows **pragmatic DDD**, **CQRS**, and **Clean Architecture** wit
 - Pass Command or Query types directly as `[FromBody]` or `[FromQuery]` in controllers — always use a separate Request record in `Controllers/{Module}/Requests/`
 - Store enum display labels in DB or `.resx`, or serialize enums as numbers on the wire — see Enums & Polymorphic Types
 - Ship a new command handler or business rule without its mandated tests — see Testing Policy (definition of done)
+- Use EF Core InMemory or SQLite for integration tests — they skip real SQL, constraints, migrations and (for the SqlKata read side) the DbContext surface entirely; integration tests use Testcontainers against real SQL Server 2022 (see Testing Policy → Integration tests)
 
 ---
 
@@ -954,6 +955,7 @@ if a bug there would be caught by the compiler or another test, don't write the 
 | `MyOS.UnitTests` | Domain + Application | xUnit + Shouldly + NSubstitute | Entity/value-object/business-rule behavior; **command** handler branches |
 | `MyOS.ArchitectureTests` | cross-cutting | xUnit + NetArchTest | Layer-dependency + module-isolation rules |
 | `MyOS.Tests` | cross-cutting | xUnit | Translation completeness + error-code/`.resx` conventions (reflection) |
+| `MyOS.IntegrationTests` | read side + persistence | xUnit + Shouldly + Testcontainers (SQL Server 2022) | SqlKata extensions/views and (when added) EF write round-trips against a real DB — see *Integration tests* below |
 
 - `MyOS.UnitTests` mirrors the source slice structure: `Domain/{Module}/{Entity}/…Tests.cs`
   and `Application/{Module}/{Entity}/…HandlerTests.cs`. Shared doubles live in `Common/`
@@ -992,12 +994,36 @@ if a bug there would be caught by the compiler or another test, don't write the 
   predicate, a cross-field rule, a `RuleForEach`/`ChildRules` collection shape, or a `.When(...)`
   that encodes *conditional business logic*. A bare presence guard on an optional field
   (`.When(x => x.Field.HasValue)`) is NOT non-trivial — it is framework plumbing and stays untested.
-- **Query handlers and the entire read side** — they build SQLKata over real SQL views and
-  cannot be meaningfully unit-tested without a database. **Consciously deferred** to future
-  integration tests (Testcontainers + real SQL Server). This is a known, accepted gap, not an
-  oversight; leave room for a `MyOS.IntegrationTests` project rather than faking the DB.
+- **Query handlers / the read side — never UNIT tested** (they build SQLKata over real SQL
+  views; meaningless without a database). They belong to **integration tests** instead — see
+  *Integration tests* below. The shared `GetPagingListAsync` mechanics are covered there;
+  per-module read-side coverage (ownership scoping, aggregation views) is added there as needed.
+  Never fake the read side with an in-memory database.
 - Trivial getters/mappers/DTO projections, EF configuration, and third-party libraries
   (MediatR, EF, `Result<T>`).
+
+### Integration tests (`MyOS.IntegrationTests`)
+
+- **Real database only — Testcontainers spins up the actual SQL Server 2022 image.** Never EF
+  Core InMemory or SQLite (see *Things AI Must Never Do*): the read side is SqlKata over SQL
+  views (no DbContext surface), and only real SQL Server runs our schemas, `tinyint`,
+  `DATEPART(ISO_WEEK)`, `CREATE OR ALTER VIEW`, and the `SqlServerCompiler`.
+- **The fixture runs the real schema setup, never a hand-maintained test schema.**
+  `SqlServerFixture` (an `IAsyncLifetime` collection fixture) creates a fresh database, then runs
+  FluentMigrator `MigrateUp()` via `ScanIn(typeof(SqlViewSynchronizer).Assembly)` (the Migrator is
+  a `ProjectReference`, so migrations are discovered by reflection — nothing is copied) followed by
+  `SqlViewSynchronizer` over the real `Views/*.sql` (linked into the test output as `Content`, so
+  they exist on disk at `AppContext.BaseDirectory/Views`). It builds a `QueryFactory` exactly like
+  the app: `SqlServerCompiler` + `Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true` (required
+  for `user_id` → `UserId` mapping). The container starts once per collection and is torn down on
+  dispose; tests isolate by a unique `user_id`, not by cleanup.
+- **Tag every integration test/class `[Trait("Category", "Integration")]`** so CI can split it
+  from the fast suites.
+- **What belongs here:** the SqlKata read mechanics (`GetPagingListAsync`), read-model/view
+  round-trips, and — when added — EF write-side persistence round-trips (a global model↔schema
+  sweep over `AppDbContext.Model.GetEntityTypes()`, plus targeted aggregate round-trips for
+  load→mutate→save, soft-delete/query-filter interaction, and TPH materialization). Anything whose
+  correctness depends on real SQL/EF/migrations, which unit tests structurally cannot see.
 
 ### Conventions
 
@@ -1009,9 +1035,11 @@ if a bug there would be caught by the compiler or another test, don't write the 
   with `[InlineData]` rather than repeating `[Fact]`s.
 - Tests are deterministic and isolated — no dependence on local machine state, clock, or
   network. Unit and architecture suites need **no** Docker.
-- CI (`.github/workflows/ci.yml`) restores, builds Release, and runs `dotnet test` over the
-  solution on push/PR to `master`. When integration tests are added, they run in a separate
-  job with a SQL Server service (no DB mocking in integration tests).
+- CI (`.github/workflows/ci.yml`) runs two jobs on push/PR, both caching the NuGet folder:
+  **`test`** (restore → build Release → `dotnet test --filter "Category!=Integration"` — the fast
+  unit/architecture/convention suites, no Docker) and **`integration`**
+  (`dotnet test MyOS.IntegrationTests --filter "Category=Integration"`, using the Docker daemon on
+  the runner for Testcontainers). Integration tests never mock the DB.
 
 ---
 
