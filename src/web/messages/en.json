@@ -37,6 +37,9 @@
       "lastName": "Last name",
       "email": "Email",
       "password": "Password",
+      "confirmPassword": "Confirm password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "submit": "Create account",
       "hasAccount": "Already have an account?",
       "loginLink": "Sign in",
@@ -44,7 +47,9 @@
         "firstNameRequired": "First name required",
         "lastNameRequired": "Last name required",
         "emailInvalid": "Valid email required",
-        "passwordMinLength": "Minimum 8 characters"
+        "passwordMinLength": "Minimum 8 characters",
+        "confirmPasswordRequired": "Please confirm your password",
+        "passwordsMustMatch": "Passwords do not match"
       }
     },
     "language": {
@@ -102,6 +107,7 @@
       "action": "Preview",
       "noPreview": "No preview available for this file type.",
       "loadError": "Failed to load preview.",
+      "openPdf": "Open PDF",
       "previous": "Previous",
       "next": "Next",
       "fullscreen": "Fullscreen"

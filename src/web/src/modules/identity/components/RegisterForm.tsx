@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
@@ -11,11 +11,13 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Alert, AlertDescription } from "@/shared/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Eye, EyeOff } from "lucide-react"
 
 export function RegisterForm() {
   const t = useTranslations("identity.register")
   const { mutate: register, isPending, error } = useRegister()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const schema = useMemo(
     () => createRegisterSchema({
@@ -23,6 +25,8 @@ export function RegisterForm() {
       lastNameRequired: t("validation.lastNameRequired"),
       emailInvalid: t("validation.emailInvalid"),
       passwordMinLength: t("validation.passwordMinLength"),
+      confirmPasswordRequired: t("validation.confirmPasswordRequired"),
+      passwordsMustMatch: t("validation.passwordsMustMatch"),
     }),
     [t]
   )
@@ -35,7 +39,13 @@ export function RegisterForm() {
     resolver: zodResolver(schema),
   })
 
-  const onSubmit = (values: RegisterFormValues) => register(values)
+  const onSubmit = (values: RegisterFormValues) =>
+    register({
+      firstName: values.firstName,
+      lastName: values.lastName,
+      email: values.email,
+      password: values.password,
+    })
 
   const errorMessage =
     error instanceof Error ? error.message : error ? String(error) : null
@@ -93,15 +103,53 @@ export function RegisterForm() {
 
         <div className="space-y-1.5">
           <Label htmlFor="password">{t("password")}</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            aria-invalid={!!errors.password}
-            {...field("password")}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              className="pr-10"
+              aria-invalid={!!errors.password}
+              {...field("password")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+              aria-pressed={showPassword}
+              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
           {errors.password && (
             <p className="text-sm text-destructive">{errors.password.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showConfirm ? "text" : "password"}
+              autoComplete="new-password"
+              className="pr-10"
+              aria-invalid={!!errors.confirmPassword}
+              {...field("confirmPassword")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirm((v) => !v)}
+              aria-label={showConfirm ? t("hidePassword") : t("showPassword")}
+              aria-pressed={showConfirm}
+              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+            >
+              {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {errors.confirmPassword && (
+            <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
           )}
         </div>
 

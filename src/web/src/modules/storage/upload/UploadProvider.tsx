@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { storageKeys } from "@/modules/storage/hooks/query-keys"
+import { randomId } from "@/shared/lib/utils"
 import { uploadFileXhr } from "./upload.api"
 import type { UploadItem } from "./upload.types"
 
@@ -31,7 +32,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     setItems((prev) => [
       ...prev,
       ...files.map((file) => ({
-        id: crypto.randomUUID(),
+        id: randomId(),
         file,
         fileName: file.name,
         sizeBytes: file.size,

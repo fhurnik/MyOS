@@ -37,6 +37,9 @@
       "lastName": "Nazwisko",
       "email": "Email",
       "password": "Hasło",
+      "confirmPassword": "Potwierdź hasło",
+      "showPassword": "Pokaż hasło",
+      "hidePassword": "Ukryj hasło",
       "submit": "Utwórz konto",
       "hasAccount": "Masz już konto?",
       "loginLink": "Zaloguj się",
@@ -44,7 +47,9 @@
         "firstNameRequired": "Imię jest wymagane",
         "lastNameRequired": "Nazwisko jest wymagane",
         "emailInvalid": "Wymagany poprawny adres email",
-        "passwordMinLength": "Minimum 8 znaków"
+        "passwordMinLength": "Minimum 8 znaków",
+        "confirmPasswordRequired": "Potwierdź hasło",
+        "passwordsMustMatch": "Hasła nie są takie same"
       }
     },
     "language": {
@@ -102,6 +107,7 @@
       "action": "Podgląd",
       "noPreview": "Brak podglądu dla tego typu pliku.",
       "loadError": "Nie udało się wczytać podglądu.",
+      "openPdf": "Otwórz PDF",
       "previous": "Poprzedni",
       "next": "Następny",
       "fullscreen": "Pełny ekran"

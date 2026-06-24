@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
-import { ChevronLeft, ChevronRight, Download, Maximize2, Loader2, FileQuestion } from "lucide-react"
+import { ChevronLeft, ChevronRight, Download, Maximize2, Loader2, FileQuestion, FileText, ExternalLink } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -106,7 +106,7 @@ export function FilePreviewModal({ files, index, categoryByExt, onIndexChange, o
           <DialogTitle className="truncate pr-8">{file?.originalName}</DialogTitle>
         </DialogHeader>
 
-        <div ref={containerRef} className="flex min-h-[40vh] items-center justify-center bg-background">
+        <div ref={containerRef} className="flex min-h-[40vh] min-w-0 items-center justify-center overflow-hidden bg-background">
           {loading ? (
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           ) : error ? (
@@ -117,18 +117,39 @@ export function FilePreviewModal({ files, index, categoryByExt, onIndexChange, o
             <video
               controls
               src={fileContentUrl(file.id)}
-              className="max-h-[70vh] w-full rounded-lg [:fullscreen_&]:max-h-screen"
+              className="max-h-[70vh] w-full max-w-full rounded-lg object-contain [:fullscreen_&]:max-h-screen"
             />
           ) : mode === "image" && blobUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={blobUrl}
               alt={file.originalName}
-              className="max-h-[70vh] w-auto object-contain [:fullscreen_&]:max-h-screen"
+              className="max-h-[70vh] w-auto max-w-full object-contain [:fullscreen_&]:max-h-screen"
             />
           ) : mode === "pdf" && blobUrl ? (
-            // #navpanes=0 collapses the built-in PDF viewer's page-thumbnail sidebar by default.
-            <iframe src={`${blobUrl}#navpanes=0`} title={file.originalName} className="h-[70vh] w-full rounded-lg border" />
+            <>
+              {/* Desktop has a built-in PDF plugin, so render inline. Mobile browsers (esp. Android
+                  Chrome) can't display a PDF in an iframe — they get a tap-to-open fallback that opens
+                  the file in a new tab, where the native PDF viewer handles it.
+                  #navpanes=0 collapses the built-in viewer's page-thumbnail sidebar by default. */}
+              <iframe
+                src={`${blobUrl}#navpanes=0`}
+                title={file.originalName}
+                className="hidden h-[70vh] w-full rounded-lg border md:block"
+              />
+              <div className="flex flex-col items-center gap-3 p-6 text-muted-foreground md:hidden">
+                <FileText className="h-10 w-10 opacity-40" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  nativeButton={false}
+                  render={<a href={fileContentUrl(file.id)} target="_blank" rel="noopener noreferrer" />}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  {t("preview.openPdf")}
+                </Button>
+              </div>
+            </>
           ) : mode === "text" && text !== null ? (
             <pre className="max-h-[70vh] w-full overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-3 text-xs">
               {text}

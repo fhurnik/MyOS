@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import * as https from "node:https"
 import * as http from "node:http"
 import type { IncomingMessage } from "node:http"
+import { Readable } from "node:stream"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5042"
 
@@ -36,7 +37,7 @@ function nodeRequest(
   url: URL,
   method: string,
   headers: Record<string, string>,
-  body?: ArrayBuffer
+  body?: ReadableStream<Uint8Array> | null
 ): Promise<BackendResponse> {
   return new Promise((resolve, reject) => {
     const isHttps = url.protocol === "https:"
@@ -91,8 +92,17 @@ function nodeRequest(
     )
 
     req.on("error", reject)
-    if (body && body.byteLength > 0) req.write(Buffer.from(body))
-    req.end()
+
+    if (body) {
+      // Stream the request body straight through instead of buffering it in memory,
+      // so large uploads (phone photos/videos up to the backend's 1 GB limit) don't
+      // exhaust the Next.js server's heap.
+      const nodeBody = Readable.fromWeb(body as Parameters<typeof Readable.fromWeb>[0])
+      nodeBody.on("error", (err) => req.destroy(err))
+      nodeBody.pipe(req)
+    } else {
+      req.end()
+    }
   })
 }
 
@@ -106,6 +116,9 @@ async function proxyToBackend(request: NextRequest, path: string[]): Promise<Nex
   const headers: Record<string, string> = {}
   const contentType = request.headers.get("content-type")
   if (contentType) headers["content-type"] = contentType
+  // Preserve Content-Length so the streamed body isn't forced into chunked encoding.
+  const contentLength = request.headers.get("content-length")
+  if (contentLength) headers["content-length"] = contentLength
   if (accessToken) headers["authorization"] = `Bearer ${accessToken}`
   const acceptLanguage = request.headers.get("accept-language")
   if (acceptLanguage) headers["accept-language"] = acceptLanguage
@@ -116,7 +129,7 @@ async function proxyToBackend(request: NextRequest, path: string[]): Promise<Nex
   if (ifRange) headers["if-range"] = ifRange
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD"
-  const body = hasBody ? await request.arrayBuffer() : undefined
+  const body = hasBody ? request.body : undefined
 
   const response = await nodeRequest(targetUrl, request.method, headers, body)
 
