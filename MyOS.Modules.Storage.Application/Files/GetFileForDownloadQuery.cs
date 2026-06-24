@@ -27,8 +27,9 @@ namespace MyOS.Modules.Storage.Application.Files
             if (row is null)
                 return Result<FileDownloadDto>.Failure(FileErrors.NotFound);
 
-            // Inline serving is only for media that is actually played in the browser; everything
-            // else (pdf, documents, archives, text) must go through the attachment download.
+            // Inline serving is for content the browser can render directly in a tab: media that is
+            // played (audio/video) and PDFs (shown in the browser's sandboxed PDF viewer). Everything
+            // else (documents, archives, text) must go through the attachment download.
             if (query.Inline && !IsInlineViewable(row.ContentType))
                 return Result<FileDownloadDto>.Failure(FileErrors.InlineNotAllowed);
 
@@ -45,7 +46,8 @@ namespace MyOS.Modules.Storage.Application.Files
 
         private static bool IsInlineViewable(string contentType) =>
             contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) ||
-            contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase);
+            contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ||
+            contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
 
         private sealed record FileLocation
         {
