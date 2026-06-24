@@ -38,6 +38,7 @@
     <Project Path="MyOS.Tests/MyOS.Tests.csproj" />
     <Project Path="MyOS.UnitTests/MyOS.UnitTests.csproj" />
     <Project Path="MyOS.ArchitectureTests/MyOS.ArchitectureTests.csproj" />
+    <Project Path="MyOS.IntegrationTests/MyOS.IntegrationTests.csproj" />
   </Folder>
   <Project Path="MyOS.API/MyOS.API.csproj" />
   <Project Path="MyOS.Migrator/MyOS.Migrator.csproj" />

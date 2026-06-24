@@ -33,9 +33,33 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
-      # Runs every test project in the solution: convention (MyOS.Tests),
-      # unit (MyOS.UnitTests) and architecture (MyOS.ArchitectureTests).
-      # Integration tests (real SQL Server) are intentionally out of scope for now and,
-      # once added, will run in a separate job with a Docker service.
+      # Fast suites: convention (MyOS.Tests), unit (MyOS.UnitTests) and architecture
+      # (MyOS.ArchitectureTests). Integration tests need a real SQL Server and run in the
+      # separate job below, so they are excluded here by category.
       - name: Test
-        run: dotnet test --configuration Release --no-build --collect:"XPlat Code Coverage"
+        run: dotnet test --configuration Release --no-build --filter "Category!=Integration" --collect:"XPlat Code Coverage"
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # Testcontainers starts SQL Server via the Docker daemon that ships on ubuntu-latest —
+      # no service container needed. The fixture runs the real migrations + view sync.
+      - name: Test (integration)
+        run: dotnet test MyOS.IntegrationTests/MyOS.IntegrationTests.csproj --configuration Release --filter "Category=Integration"
